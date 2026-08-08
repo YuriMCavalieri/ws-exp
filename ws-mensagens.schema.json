@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WS Plataforma — contrato de mensagens v1",
+  "$defs": {
+    "base": {
+      "type": "object",
+      "required": [
+        "tipo"
+      ],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "pattern": "^ws:"
+        },
+        "v": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "imovel": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nome": {
+          "type": "string"
+        },
+        "endereco": {
+          "type": "string"
+        },
+        "lat": {
+          "type": "number"
+        },
+        "lon": {
+          "type": "number"
+        },
+        "area": {
+          "type": "number"
+        },
+        "quartos": {
+          "type": "integer"
+        },
+        "suites": {
+          "type": "integer"
+        },
+        "vagas": {
+          "type": "integer"
+        },
+        "andar": {
+          "type": "integer"
+        },
+        "preco": {
+          "type": "number"
+        },
+        "wsi": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "lead": {
+      "type": "object",
+      "required": [
+        "nome",
+        "telefone",
+        "quando"
+      ],
+      "properties": {
+        "nome": {
+          "type": "string",
+          "minLength": 2
+        },
+        "telefone": {
+          "type": "string",
+          "minLength": 8
+        },
+        "email": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "intencao": {
+          "type": "string"
+        },
+        "projeto": {
+          "type": "string"
+        },
+        "wsi": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "area": {
+          "type": "number"
+        },
+        "comodos": {
+          "type": "integer"
+        },
+        "tempo_no_tour_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "atencao": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "carrinho": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "preco"
+            ],
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "preco": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "valor_carrinho": {
+          "type": "number"
+        },
+        "quando": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "sku",
+        "nome"
+      ],
+      "properties": {
+        "sku": {
+          "type": "string"
+        },
+        "nome": {
+          "type": "string"
+        },
+        "categoria": {
+          "type": "string"
+        },
+        "preco": {
+          "type": "number"
+        },
+        "dimensoes": {
+          "type": "object",
+          "properties": {
+            "largura": {
+              "type": "number"
+            },
+            "altura": {
+              "type": "number"
+            },
+            "profundidade": {
+              "type": "number"
+            }
+          }
+        },
+        "loja": {
+          "type": "string"
+        },
+        "licenca": {
+          "type": "string"
+        },
+        "glb": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "midia": {
+      "type": "object",
+      "properties": {
+        "splat": {
+          "type": "string"
+        },
+        "colisor": {
+          "type": "string"
+        },
+        "panoramas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fotos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "title": "ws:pronto",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:pronto"
+        },
+        "camada": {
+          "enum": [
+            "mundo",
+            "studio",
+            "atelier",
+            "tour",
+            "walkthrough"
+          ]
+        }
+      },
+      "required": [
+        "camada"
+      ]
+    },
+    {
+      "title": "ws:lead",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:lead"
+        },
+        "lead": {
+          "$ref": "#/$defs/lead"
+        }
+      },
+      "required": [
+        "lead"
+      ]
+    },
+    {
+      "title": "ws:space-model",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:space-model"
+        },
+        "space": {
+          "type": "object"
+        },
+        "imovelId": {
+          "type": "string"
+        },
+        "abrirImovel": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "space"
+      ]
+    },
+    {
+      "title": "ws:entrar-imovel",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:entrar-imovel"
+        },
+        "imovel": {
+          "$ref": "#/$defs/imovel"
+        },
+        "space": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "imovel"
+      ]
+    },
+    {
+      "title": "ws:entrar-walkthrough",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:entrar-walkthrough"
+        },
+        "imovel": {
+          "$ref": "#/$defs/imovel"
+        }
+      },
+      "required": [
+        "imovel"
+      ]
+    },
+    {
+      "title": "ws:carrinho",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:carrinho"
+        },
+        "itens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        }
+      },
+      "required": [
+        "itens"
+      ]
+    },
+    {
+      "title": "ws:atelier-movel",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:atelier-movel"
+        },
+        "item": {
+          "$ref": "#/$defs/item"
+        }
+      },
+      "required": [
+        "item"
+      ]
+    },
+    {
+      "title": "ws:atelier-pino",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:atelier-pino"
+        },
+        "item": {
+          "$ref": "#/$defs/item"
+        }
+      },
+      "required": [
+        "item"
+      ]
+    },
+    {
+      "title": "navegacao",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "enum": [
+            "ws:voltar-mundo",
+            "ws:ir-para-mundo",
+            "ws:ir-para-studio",
+            "ws:abrir-atelier",
+            "ws:camada-real"
+          ]
+        }
+      }
+    },
+    {
+      "title": "ws:carregar-imovel",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:carregar-imovel"
+        },
+        "imovel": {
+          "$ref": "#/$defs/imovel"
+        },
+        "space": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "midia": {
+          "$ref": "#/$defs/midia"
+        }
+      },
+      "required": [
+        "imovel"
+      ]
+    },
+    {
+      "title": "ws:pedir-space",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:pedir-space"
+        },
+        "imovelId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "title": "ws:ir-para",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:ir-para"
+        },
+        "alvo": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "number"
+            },
+            "lon": {
+              "type": "number"
+            },
+            "altitude": {
+              "type": "number"
+            },
+            "ambiente": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "alvo"
+      ]
+    }
+  ]
+}

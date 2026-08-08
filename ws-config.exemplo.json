@@ -1,0 +1,11 @@
+{
+  "_leia": "Renomeie para ws-config.json e coloque na MESMA pasta do HTML. NUNCA versione nem compartilhe este arquivo com as chaves preenchidas.",
+  "googleMapsApiKey": "COLE_AQUI_A_CHAVE_COM_MAP_TILES_API_ATIVA",
+  "tomtomKey": "OPCIONAL_PARA_TRANSITO_AO_VIVO",
+  "_apis_necessarias": [
+    "Map Tiles API (obrigatória — fotogrametria 3D)",
+    "Maps JavaScript API (Street View e geocodificação)",
+    "Weather API (opcional — clima real)"
+  ],
+  "_restricao_recomendada": "Restrinja a chave por referenciador HTTP (whitestone.living/*) antes de publicar."
+}

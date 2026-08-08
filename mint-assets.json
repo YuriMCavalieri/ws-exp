@@ -1,0 +1,28 @@
+{
+  "_leia": "Registro dos assets gerados que entram no produto. Chave lógica estável, origem, licença. Mundo fica como registro remoto (streaming), não como download.",
+  "versao": 1,
+  "projeto": "WS Plataforma",
+  "assetRoot": "assets",
+  "assets": {
+    "ambiente.apartamento-lancamento": {
+      "tipo": "world",
+      "integracao": "remote_stream",
+      "renderer": "@sparkjsdev/spark",
+      "formato": "rad",
+      "bytes": 44135800,
+      "colisor": { "formato": "glb", "visivel": false, "obrigatorioParaFisica": true },
+      "transformRaiz": { "rotacao": [3.141592653589793, 3.141592653589793, 0], "escala": 2.5, "y": 1.5 },
+      "usadoEm": ["WS_MINT.html"],
+      "licenca": "gerado na conta White Stone — uso comercial próprio",
+      "observacao": "Ambiente GERADO, não capturado. Vale para lançamento e decorado. Nunca para representar imóvel real à venda."
+    },
+    "movel.sofa-capitone": {
+      "tipo": "model",
+      "integracao": "arquivo_local",
+      "formato": "glb",
+      "caminho": "assets/ws_sofa_capitone_v1.glb",
+      "usadoEm": ["WS_STUDIO.html", "WS_ATELIER.html"],
+      "licenca": "gerado a partir de fotos próprias — autoria White Stone"
+    }
+  }
+}

@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>WS ATELIER — o estúdio dos móveis</title>
+<style>
+:root{--onix:#0B0D11;--onix2:#141821;--onix3:#1C212C;--marfim:#F8F6F0;--ouro:#C9A961;
+  --cinza:#8B857A;--linha:#232936;--verde:#4FA97A;--vermelho:#C96161}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--onix);color:var(--marfim);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+#app{display:flex;height:100%}
+
+#lado{width:352px;flex:0 0 352px;background:var(--onix2);border-right:1px solid var(--linha);
+  display:flex;flex-direction:column;z-index:5}
+#marca{padding:18px 20px 14px;border-bottom:1px solid var(--linha)}
+#marca .n{font-family:Georgia,serif;font-size:13px;letter-spacing:.34em;color:var(--ouro)}
+#marca .s{font-size:10.5px;letter-spacing:.16em;color:var(--cinza);margin-top:6px;text-transform:uppercase}
+#abas{display:flex;border-bottom:1px solid var(--linha)}
+#abas button{flex:1;padding:13px 6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--cinza);border-bottom:2px solid transparent;transition:.18s}
+#abas button:hover{color:var(--marfim)}
+#abas button.on{color:var(--ouro);border-bottom-color:var(--ouro);background:#181d27}
+#corpo{flex:1;overflow-y:auto;padding:18px 20px 30px}
+#corpo::-webkit-scrollbar{width:7px}#corpo::-webkit-scrollbar-thumb{background:#2b3242;border-radius:4px}
+
+.sec{margin-bottom:22px}
+.sec h4{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cinza);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec h4:after{content:"";flex:1;height:1px;background:var(--linha)}
+.hint{font-size:11.5px;line-height:1.55;color:#9a958c}
+.hint b{color:var(--marfim);font-weight:600}
+.drop{border:1px dashed #39414f;border-radius:10px;padding:22px 14px;text-align:center;
+  cursor:pointer;transition:.18s;background:#10141c}
+.drop:hover,.drop.hot{border-color:var(--ouro);background:#181d27}
+.drop .t{font-size:12.5px;margin-bottom:5px}
+.drop .u{font-size:10.5px;color:var(--cinza);line-height:1.5}
+.bt{display:block;width:100%;padding:11px;border-radius:8px;background:#222939;font-size:11.5px;
+  transition:.18s;text-align:center;margin-top:8px}
+.bt:hover{background:#2c3549}
+.bt:disabled{opacity:.4;cursor:not-allowed}
+.bt.ouro{background:linear-gradient(135deg,#C9A961,#a8873f);color:#14100a;font-weight:600}
+.bt.ouro:hover{filter:brightness(1.09)}
+.bt.mini{padding:8px;font-size:10.5px}
+.lin{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:11.5px}
+.lin label{flex:0 0 92px;color:var(--cinza);font-size:10.5px}
+.lin input[type=range]{flex:1;accent-color:var(--ouro)}
+.lin .v{flex:0 0 52px;text-align:right;color:var(--ouro);font-variant-numeric:tabular-nums;font-size:11px}
+.lin select,.lin input[type=text],.lin input[type=number]{flex:1;background:#10141c;
+  border:1px solid #2b3242;border-radius:6px;padding:7px 9px;font-size:11.5px;min-width:0}
+.busca{width:100%;background:#10141c;border:1px solid #2b3242;border-radius:9px;
+  padding:11px 12px;font-size:12px;margin-bottom:10px}
+.busca:focus{outline:none;border-color:var(--ouro)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{padding:5px 10px;border-radius:20px;border:1px solid #2b3242;background:#10141c;
+  font-size:10.5px;color:var(--cinza);transition:.15s}
+.chip:hover{border-color:#3d4657;color:var(--marfim)}
+.chip.on{border-color:var(--ouro);color:var(--ouro);background:rgba(201,169,97,.1)}
+.opts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.opt{flex:1;min-width:62px;padding:9px 6px;border-radius:8px;border:1px solid #2b3242;
+  background:#10141c;font-size:10.5px;text-align:center;transition:.15s}
+.opt:hover{border-color:#3d4657}
+.opt.on{border-color:var(--ouro);color:var(--ouro);background:rgba(201,169,97,.09)}
+.opt small{display:block;color:var(--cinza);font-size:9px;margin-top:3px}
+.gal{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.th{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:#0a0d13;
+  border:1px solid #2b3242}
+.th img{width:100%;height:100%;object-fit:cover}
+.th .rm{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;
+  background:rgba(11,13,17,.85);font-size:10px;line-height:15px;text-align:center;color:#c8c2b8}
+.th .rm:hover{background:var(--vermelho);color:#fff}
+.th.add{display:flex;align-items:center;justify-content:center;color:#4a5262;font-size:18px;
+  border-style:dashed;cursor:pointer}
+.th.add:hover{border-color:var(--ouro);color:var(--ouro)}
+.custo{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px;
+  border-top:1px solid var(--linha);margin-top:14px}
+.custo .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--cinza)}
+.custo .v{font-family:Georgia,serif;font-size:21px;color:var(--ouro)}
+.item{display:flex;gap:10px;padding:9px;border-radius:9px;background:#10141c;border:1px solid var(--linha);
+  margin-bottom:7px;cursor:pointer;transition:.15s;align-items:center}
+.item:hover{border-color:#3a4354;transform:translateX(2px)}
+.item.on{border-color:var(--ouro);background:#191d26}
+.item .ic{width:46px;height:46px;border-radius:6px;flex:0 0 46px;background:#0a0d13;
+  display:flex;align-items:center;justify-content:center}
+.item .ic svg{width:26px;height:26px;stroke:#5f6878;fill:none;stroke-width:1.2}
+.item.on .ic svg{stroke:var(--ouro)}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font-size:12px;font-weight:600;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.item .tx small{display:block;font-size:10px;color:var(--cinza);margin-top:2px}
+.item .pr{font-size:11.5px;color:var(--ouro);font-variant-numeric:tabular-nums;text-align:right}
+.item .pr small{display:block;color:var(--cinza);font-size:9px}
+.aviso{border-left:2px solid var(--ouro);padding:9px 0 9px 11px;font-size:11px;
+  line-height:1.55;color:#a8a299;margin-top:10px}
+.aviso.err{border-color:var(--vermelho)}
+.aviso.ok{border-color:var(--verde)}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;background:#1c212c;
+  font-size:9.5px;color:var(--cinza);margin:2px 3px 0 0}
+
+#visor{flex:1;position:relative;background:#05070a}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+#topo{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;gap:8px;
+  align-items:center;z-index:3}
+#topo .cap{flex:1;font-family:Georgia,serif;font-size:14px;text-shadow:0 2px 14px #000}
+.tb{background:rgba(11,13,17,.72);backdrop-filter:blur(8px);border:1px solid var(--linha);
+  border-radius:8px;padding:8px 12px;font-size:11px;transition:.18s}
+.tb:hover{border-color:var(--ouro);color:var(--ouro)}
+.tb.on{border-color:var(--ouro);color:var(--ouro);background:rgba(201,169,97,.1)}
+#medidas{position:absolute;left:16px;bottom:16px;display:flex;gap:8px;font-size:10.5px;
+  color:#7d8697;pointer-events:none}
+#medidas .p{background:rgba(11,13,17,.72);backdrop-filter:blur(8px);border:1px solid var(--linha);
+  border-radius:7px;padding:6px 11px;font-variant-numeric:tabular-nums}
+#ficha{position:absolute;right:16px;top:64px;width:266px;background:rgba(11,13,17,.86);
+  backdrop-filter:blur(14px);border:1px solid var(--linha);border-radius:14px;padding:16px;
+  z-index:3;display:none}
+#ficha h3{font-family:Georgia,serif;font-size:16px;font-weight:400;margin-bottom:3px}
+#ficha .lj{font-size:10.5px;color:var(--cinza);margin-bottom:12px}
+#ficha .pz{font-family:Georgia,serif;font-size:24px;color:var(--ouro);margin-bottom:2px}
+#ficha .px{font-size:10px;color:var(--cinza);margin-bottom:12px}
+#ficha .lb{display:flex;justify-content:space-between;font-size:10.5px;padding:4px 0;
+  border-bottom:1px solid #1c212c}
+#ficha .lb span:first-child{color:var(--cinza)}
+#vazio{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;text-align:center;padding:40px;pointer-events:none}
+#vazio .g{font-family:Georgia,serif;font-size:26px;color:#2f3644;letter-spacing:.06em}
+#vazio .p{font-size:12.5px;color:#4a5262;max-width:400px;line-height:1.7}
+#diag{position:fixed;inset:0;background:var(--onix);z-index:99;display:none;padding:44px;overflow:auto}
+#diag h3{font-family:Georgia,serif;color:var(--ouro);margin-bottom:14px}
+#diag pre{background:#10141c;border:1px solid var(--linha);border-radius:8px;padding:16px;
+  font-size:11.5px;line-height:1.6;white-space:pre-wrap;color:#a8a299}
+@media(max-width:860px){#lado{position:absolute;height:100%;box-shadow:0 0 40px rgba(0,0,0,.6)}
+  #ficha{display:none!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="lado">
+    <div id="marca">
+      <div class="n">WS ATELIER</div>
+      <div class="s">o estúdio dos móveis</div>
+    </div>
+    <nav id="abas">
+      <button data-aba="catalogo" class="on">Catálogo</button>
+      <button data-aba="criar">Criar</button>
+      <button data-aba="ficha">Ficha</button>
+    </nav>
+    <div id="corpo"></div>
+  </aside>
+
+  <main id="visor">
+    <canvas id="cv"></canvas>
+    <div id="vazio">
+      <div class="g">WS ATELIER</div>
+      <div class="p">Escolha um móvel no catálogo ou crie o seu a partir de fotos.
+        Aqui o móvel ganha corpo, medida, preço e destino.</div>
+    </div>
+    <div id="topo">
+      <div class="cap" id="cap"></div>
+      <button class="tb" id="btGira">Girar</button>
+      <button class="tb" id="btLuz">Luz da loja</button>
+      <button class="tb" id="btCota">Cotas</button>
+      <button class="tb" id="btFoto">Render</button>
+      <button class="tb" id="btVoltar" style="display:none">Voltar</button>
+    </div>
+    <div id="medidas"></div>
+    <div id="ficha"></div>
+  </main>
+</div>
+
+<div id="diag"><h3>O WS Atelier não conseguiu iniciar</h3><pre id="diagT"></pre></div>
+<input type="file" id="fFotos" accept="image/*" multiple style="display:none">
+<input type="file" id="fGlb" accept=".glb,.gltf" style="display:none">
+
+<script>
+window.__WS_ERR=[];
+addEventListener('error',e=>{window.__WS_ERR.push((e.message||'erro')+' @ '+(e.filename||'').split('/').pop()+':'+(e.lineno||'?'))});
+addEventListener('unhandledrejection',e=>{window.__WS_ERR.push('promise: '+(e.reason&&e.reason.message||e.reason))});
+setTimeout(function(){
+  if(window.__WS_OK) return;
+  document.getElementById('diag').style.display='block';
+  document.getElementById('diagT').textContent=
+    'O módulo 3D não sinalizou inicialização em 9 segundos.\n\n'+
+    '  1. Sem internet — a biblioteca Three.js vem de unpkg.com.\n'+
+    '  2. Firewall bloqueando unpkg.com.\n'+
+    '  3. WebGL2 desativado (teste em about:gpu).\n\n'+
+    'Erros capturados:\n'+(window.__WS_ERR.length?window.__WS_ERR.join('\n'):'  (nenhum)');
+},9000);
+</script>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.170.0/build/three.module.js",
+"three/addons/":"https://unpkg.com/three@0.170.0/examples/jsm/"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
+import {KTX2Loader} from 'three/addons/loaders/KTX2Loader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+
+/* ===========================================================================
+   WS ATELIER — estúdio autônomo de móveis
+   Não compartilha estado com o WS Studio. Fala com ele por postMessage.
+   Três superfícies: CATÁLOGO (achar), CRIAR (gerar por foto), FICHA (vender).
+   ========================================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+
+/* ---------------------------------------------------------------- catálogo */
+/* Lojas parceiras — coordenadas usadas no filtro geográfico (raio real). */
+const LOJAS=[
+  {id:'wm',   nome:'WM Mobília',        cidade:'Belo Horizonte', uf:'MG', lat:-19.9245, lon:-43.9352},
+  {id:'nb',   nome:'Nobre Marcenaria',  cidade:'Nova Lima',      uf:'MG', lat:-19.9857, lon:-43.8466},
+  {id:'ct',   nome:'Casa & Trilho',     cidade:'Contagem',       uf:'MG', lat:-19.9317, lon:-44.0536},
+  {id:'sp',   nome:'Estúdio Paulista',  cidade:'São Paulo',      uf:'SP', lat:-23.5613, lon:-46.6560},
+  {id:'ws',   nome:'Acervo White Stone',cidade:'Belo Horizonte', uf:'MG', lat:-19.9320, lon:-43.9380}
+];
+const REF={cidade:'Belo Horizonte', lat:-19.9227, lon:-43.9451}; /* centro de referência */
+
+const CATALOGO=[
+  {id:'sofa-cap', nome:'Sofá capitonê 2,00 m', cat:'sofa', loja:'wm', preco:6490,
+   dim:[2.00,0.85,0.95], cor:'#4a5160', mat:'linho', prazo:'25 dias', sku:'WM-SF-200',
+   tags:['sofá','sala','estar','capitonê','três lugares','retrátil','cinza','azulado','clássico','confortável']},
+  {id:'sofa-mod', nome:'Sofá modular canto', cat:'sofa', loja:'nb', preco:11900,
+   dim:[2.80,0.78,1.70], cor:'#7d7264', mat:'bouclé', prazo:'40 dias', sku:'NB-SF-MOD',
+   tags:['sofá','modular','canto','chaise','sala grande','bege','contemporâneo','família']},
+  {id:'poltrona', nome:'Poltrona giratória', cat:'poltrona', loja:'wm', preco:2890,
+   dim:[0.78,0.92,0.82], cor:'#8a5a3c', mat:'couro', prazo:'20 dias', sku:'WM-PT-GIR',
+   tags:['poltrona','leitura','giratória','couro','caramelo','escritório','canto','ambiente pequeno']},
+  {id:'mesa-jan', nome:'Mesa de jantar 8 lugares', cat:'mesa', loja:'nb', preco:9400,
+   dim:[2.40,0.76,1.00], cor:'#40342a', mat:'madeira maciça', prazo:'45 dias', sku:'NB-MJ-240',
+   tags:['mesa','jantar','oito lugares','madeira','nogueira','sala de jantar','família','grande']},
+  {id:'mesa-cen', nome:'Mesa de centro travertino', cat:'mesa', loja:'ct', preco:3250,
+   dim:[1.20,0.36,0.70], cor:'#c6b8a2', mat:'travertino', prazo:'15 dias', sku:'CT-MC-120',
+   tags:['mesa','centro','pedra','travertino','sala','bege','minimalista','baixa']},
+  {id:'rack', nome:'Rack ripado 2,20 m', cat:'armario', loja:'ct', preco:4180,
+   dim:[2.20,0.45,0.42], cor:'#6b4f36', mat:'MDF ripado', prazo:'18 dias', sku:'CT-RK-220',
+   tags:['rack','tv','sala','ripado','madeira','televisão','estar','organização']},
+  {id:'estante', nome:'Estante vazada 1,80 m', cat:'armario', loja:'sp', preco:5600,
+   dim:[1.80,2.00,0.36], cor:'#2f3238', mat:'aço e carvalho', prazo:'30 dias', sku:'SP-ET-180',
+   tags:['estante','livros','divisória','aço','industrial','escritório','vazada','alta']},
+  {id:'cama', nome:'Cama queen com cabeceira', cat:'cama', loja:'wm', preco:7300,
+   dim:[1.68,1.10,2.10], cor:'#5b5348', mat:'veludo', prazo:'28 dias', sku:'WM-CM-QN',
+   tags:['cama','queen','quarto','cabeceira','estofada','veludo','suíte','casal']},
+  {id:'cadeira', nome:'Cadeira palhinha (par)', cat:'cadeira', loja:'sp', preco:1980,
+   dim:[0.46,0.86,0.52], cor:'#a9926c', mat:'palha natural',prazo:'12 dias', sku:'SP-CD-PAL',
+   tags:['cadeira','jantar','palhinha','natural','par','brasileiro','leve','clássico']},
+  {id:'lumin', nome:'Luminária de piso arco', cat:'luminaria', loja:'ws', preco:1450,
+   dim:[0.40,1.95,1.20], cor:'#3a3d44', mat:'metal', prazo:'10 dias', sku:'WS-LM-ARC',
+   tags:['luminária','piso','arco','leitura','sala','metal','preto','iluminação']},
+  {id:'tapete', nome:'Tapete 2,50 × 3,00 m', cat:'tapete', loja:'ws', preco:2740,
+   dim:[3.00,0.02,2.50], cor:'#9c9081', mat:'lã', prazo:'14 dias', sku:'WS-TP-250',
+   tags:['tapete','sala','lã','neutro','grande','conforto','acústica']},
+  {id:'aparador', nome:'Aparador ripado 1,60 m', cat:'armario', loja:'nb', preco:3960,
+   dim:[1.60,0.80,0.40], cor:'#6a4b32', mat:'freijó', prazo:'22 dias', sku:'NB-AP-160',
+   tags:['aparador','hall','entrada','ripado','madeira','sala de jantar','apoio']}
+];
+const CATS={sofa:'Sofás',poltrona:'Poltronas',mesa:'Mesas',armario:'Armários e racks',
+  cama:'Camas',cadeira:'Cadeiras',luminaria:'Iluminação',tapete:'Tapetes'};
+
+/* ---- busca semântica leve: sinônimos + intenção de espaço + faixa de preço --- */
+const SINONIMOS={
+  'sofa':['sofá','estofado','couch'],'sofá':['sofa','estofado'],
+  'tv':['televisão','rack','painel'],'televisao':['tv','rack'],
+  'barato':['econômico'],'caro':['premium','alto padrão'],
+  'pequeno':['compacto','apertado','pouco espaço','studio','kitnet'],
+  'grande':['amplo','espaçoso','família'],
+  'escuro':['preto','grafite','carvão'],'claro':['bege','off white','areia','natural'],
+  'moderno':['contemporâneo','minimalista'],'classico':['clássico','tradicional'],
+  'madeira':['carvalho','nogueira','freijó','maciça'],
+  'quarto':['dormitório','suíte'],'sala':['estar','living'],'jantar':['refeições'],
+  'escritorio':['escritório','home office','trabalho']
+};
+const semAcento=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function expandir(termo){
+  const t=semAcento(termo), saida=new Set([t]);
+  for(const [k,v] of Object.entries(SINONIMOS)){
+    const ka=semAcento(k);
+    if(ka===t||ka.startsWith(t)) v.forEach(x=>saida.add(semAcento(x)));
+    if(v.some(x=>semAcento(x)===t)) saida.add(ka);
+  }
+  return [...saida];
+}
+/* adjetivos que o comprador usa e que na verdade são filtros numéricos */
+const INTENCAO=[
+  {re:/^(pequen|compact|estreit)[oa]s?$/, nota:it=>it.dim[0]<1.35?0.85:0.1},
+  {re:/^(grand)es?$|^(ampl|espacos)[oa]s?$/, nota:it=>it.dim[0]>2.0?0.85:0.1},
+  {re:/^(barat|economic)[oa]s?$/, nota:it=>it.preco<3000?0.85:0.1},
+  {re:/^car[oa]s?$|^premium$|^luxo$/, nota:it=>it.preco>6000?0.85:0.1},
+  {re:/^baix[oa]s?$/, nota:it=>it.dim[1]<0.60?0.85:0.1},
+  {re:/^alt[oa]s?$/,  nota:it=>it.dim[1]>1.50?0.85:0.1},
+  {re:/^(fund|profund)[oa]s?$/, nota:it=>it.dim[2]>0.90?0.85:0.1}
+];
+function pontuar(item, consulta){
+  if(!consulta.trim()) return 1;
+  const termos=semAcento(consulta).split(/[\s,]+/).filter(t=>t.length>1);
+  const loja=LOJAS.find(l=>l.id===item.loja)||{};
+  const campo=semAcento([item.nome,item.mat,CATS[item.cat],loja.nome,loja.cidade,
+    ...item.tags].join(' '));
+  let nota=0, casou=0;
+  for(const t of termos){
+    const alts=expandir(t);
+    let melhor=0;
+    for(const a of alts){
+      if(campo.includes(' '+a)||campo.startsWith(a)) melhor=Math.max(melhor,1);
+      else if(campo.includes(a)) melhor=Math.max(melhor,0.7);
+      else if(a.length>4 && campo.includes(a.slice(0,-1))) melhor=Math.max(melhor,0.45);
+    }
+    /* intenção: adjetivos viram filtro sobre medida e preço, em qualquer gênero */
+    for(const i of INTENCAO) if(i.re.test(t)) melhor=Math.max(melhor,i.nota(item));
+    if(melhor>0){ nota+=melhor; casou++; }
+  }
+  const cobertura=casou/termos.length;
+  /* uma palavra solta sem sentido não pode "carregar" a consulta inteira:
+     se o sistema não entendeu a maioria dos termos, ele diz que não achou */
+  if(cobertura<0.6) return 0;
+  return (nota/termos.length)*cobertura;
+}
+function distanciaKm(a,b){
+  const R=6371, r=Math.PI/180;
+  const dLat=(b.lat-a.lat)*r, dLon=(b.lon-a.lon)*r;
+  const s=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+
+/* ------------------------------------------------------------------ estado */
+const EST={aba:'catalogo', consulta:'', cats:new Set(), raio:0, precoMax:0,
+  selecionado:null, gerados:[], girar:true, luz:'loja', cotas:false};
+const CRIAR={fotos:[], cfg:{modelo:'meshy-5',textura:'2048',poly:'16000',pbr:true},
+  nome:'', preco:'', estado:'ocioso', msg:''};
+const CUSTO={modelo:{'meshy-5':6,'meshy-6':11},
+  textura:{'2048':0,'4096':6,'8192':16},
+  poly:{'8000':0,'16000':3,'40000':9},
+  pbr:4, porFoto:1};
+const custoTotal=()=>CUSTO.modelo[CRIAR.cfg.modelo]+CUSTO.textura[CRIAR.cfg.textura]+
+  CUSTO.poly[CRIAR.cfg.poly]+(CRIAR.cfg.pbr?CUSTO.pbr:0)+Math.max(0,CRIAR.fotos.length-1)*CUSTO.porFoto;
+
+function todos(){ return [...EST.gerados, ...CATALOGO]; }
+function filtrados(){
+  const ref=REF;
+  return todos().map(it=>{
+    const loja=LOJAS.find(l=>l.id===it.loja)||LOJAS[4];
+    const km=distanciaKm(ref,loja);
+    return {...it, _loja:loja, _km:km, _nota:pontuar(it,EST.consulta)};
+  }).filter(it=>{
+    if(it._nota<=0) return false;
+    if(EST.cats.size && !EST.cats.has(it.cat)) return false;
+    if(EST.raio && it._km>EST.raio) return false;
+    if(EST.precoMax && it.preco>EST.precoMax) return false;
+    return true;
+  }).sort((a,b)=> (b._nota-a._nota) || (a._km-b._km) || (a.preco-b.preco));
+}
+
+/* ------------------------------------------------------------------- 3D */
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({canvas:$('#cv'),antialias:true}); }
+catch(e){ throw new Error('WebGL indisponível: '+e.message); }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(38,1,0.05,120);
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+
+/* ciclorama: fundo infinito de estúdio fotográfico */
+const ciclo=(()=>{
+  const s=new THREE.Shape();
+  s.moveTo(-9,0); s.lineTo(3.2,0);
+  s.bezierCurveTo(5.4,0, 6.2,0.9, 6.2,3.0);
+  s.lineTo(6.2,9);
+  const g=new THREE.ExtrudeGeometry(s,{depth:18,bevelEnabled:false});
+  g.translate(0,0,-9); g.rotateY(Math.PI/2);
+  const m=new THREE.MeshStandardMaterial({color:0x14161b,roughness:.94,metalness:0,
+    side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(g,m); mesh.receiveShadow=true; scene.add(mesh); return mesh;
+})();
+
+const luzes={
+  chave:new THREE.DirectionalLight(0xfff4e2,2.6),
+  preench:new THREE.DirectionalLight(0xdfe8ff,0.9),
+  contra:new THREE.SpotLight(0xffffff,26,14,0.7,0.55,1.4),
+  ambiente:new THREE.HemisphereLight(0xdfe6f2,0x2a2f38,0.35)
+};
+luzes.chave.position.set(3.4,4.6,3.0); luzes.chave.castShadow=true;
+luzes.chave.shadow.mapSize.set(2048,2048);
+luzes.chave.shadow.camera.left=-4; luzes.chave.shadow.camera.right=4;
+luzes.chave.shadow.camera.top=4; luzes.chave.shadow.camera.bottom=-4;
+luzes.chave.shadow.bias=-0.0009;
+luzes.preench.position.set(-4.2,2.6,1.8);
+luzes.contra.position.set(-2.0,4.0,-4.2);
+Object.values(luzes).forEach(l=>scene.add(l));
+
+const PRESETS={
+  loja:{expo:1.05,chave:2.6,preench:0.9,contra:26,fundo:0x14161b,corChave:0xfff4e2},
+  dia :{expo:1.30,chave:3.4,preench:1.7,contra:8, fundo:0x232830,corChave:0xffffff},
+  noite:{expo:0.85,chave:1.1,preench:0.4,contra:44,fundo:0x0a0c10,corChave:0xffd9a8}
+};
+function aplicarLuz(k){
+  const p=PRESETS[k]||PRESETS.loja; EST.luz=k;
+  renderer.toneMappingExposure=p.expo;
+  luzes.chave.intensity=p.chave; luzes.chave.color.setHex(p.corChave);
+  luzes.preench.intensity=p.preench; luzes.contra.intensity=p.contra;
+  ciclo.material.color.setHex(p.fundo);
+  renderer.setClearColor(p.fundo,1);
+  $('#btLuz').textContent = k==='loja'?'Luz da loja' : k==='dia'?'Luz do dia':'Noturno';
+}
+
+const palco=new THREE.Group(); scene.add(palco);
+const cotas=new THREE.Group(); scene.add(cotas);
+let objeto=null, giro=0;
+
+/* --- geração procedural: cada categoria vira um volume plausível --- */
+function pecaProcedural(item){
+  const g=new THREE.Group();
+  const [L,A,P]=item.dim;
+  const cor=new THREE.Color(item.cor);
+  const rug = item.mat.match(/couro|veludo|linho|bouclé|lã|palha/i)?0.86:
+              item.mat.match(/pedra|travertino/i)?0.42:
+              item.mat.match(/aço|metal/i)?0.32:0.62;
+  const met = item.mat.match(/aço|metal/i)?0.75:0.03;
+  const mat=new THREE.MeshStandardMaterial({color:cor,roughness:rug,metalness:met});
+  const rbox=(w,h,d,r=0.02)=>{
+    const s=new THREE.Shape();
+    const x=-w/2,y=-h/2;
+    s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r);
+    s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r);
+    s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
+    const gg=new THREE.ExtrudeGeometry(s,{depth:d,bevelEnabled:true,bevelSize:0.008,
+      bevelThickness:0.008,bevelSegments:2,curveSegments:6});
+    gg.translate(0,0,-d/2); return gg;
+  };
+  const add=(geo,x,y,z,m)=>{ const n=new THREE.Mesh(geo,m||mat);
+    n.position.set(x,y,z); n.castShadow=true; n.receiveShadow=true; g.add(n); return n; };
+  const perna=new THREE.MeshStandardMaterial({color:0x2b2b2f,roughness:.5,metalness:.5});
+
+  switch(item.cat){
+    case 'sofa':{
+      add(rbox(L,0.34,P,0.05),0,0.36,0);
+      add(rbox(L,0.44,0.22,0.05),0,0.72,-P/2+0.11);
+      add(rbox(0.20,0.36,P-0.1,0.05),-L/2+0.10,0.60,0);
+      add(rbox(0.20,0.36,P-0.1,0.05), L/2-0.10,0.60,0);
+      for(const sx of [-1,1]) for(const sz of [-1,1])
+        add(new THREE.CylinderGeometry(0.025,0.02,0.19,10),sx*(L/2-0.16),0.095,sz*(P/2-0.14),perna);
+      break;}
+    case 'poltrona':{
+      add(rbox(L,0.30,P,0.06),0,0.42,0);
+      add(rbox(L,0.46,0.18,0.08),0,0.78,-P/2+0.09);
+      add(new THREE.CylinderGeometry(0.24,0.30,0.06,20),0,0.05,0,perna);
+      add(new THREE.CylinderGeometry(0.05,0.05,0.24,14),0,0.20,0,perna);
+      break;}
+    case 'mesa':{
+      add(rbox(L,0.05,P,0.01),0,A-0.025,0);
+      const espes=item.id==='mesa-cen'?0.18:0.07;
+      for(const sx of [-1,1])
+        add(new THREE.BoxGeometry(espes,A-0.05,P*0.6),sx*(L/2-espes),(A-0.05)/2,0,
+          item.id==='mesa-cen'?mat:perna);
+      break;}
+    case 'armario':{
+      add(rbox(L,A-0.08,P,0.01),0,(A-0.08)/2+0.08,0);
+      const n=Math.max(4,Math.round(L*7));
+      const ripa=new THREE.MeshStandardMaterial({color:cor.clone().multiplyScalar(0.82),roughness:rug});
+      for(let i=0;i<n;i++)
+        add(new THREE.BoxGeometry(L/n*0.55,A-0.16,0.02),-L/2+(i+0.5)*(L/n),(A-0.08)/2+0.08,P/2+0.005,ripa);
+      for(const sx of [-1,1])
+        add(new THREE.BoxGeometry(0.04,0.09,P*0.7),sx*(L/2-0.12),0.045,0,perna);
+      break;}
+    case 'cama':{
+      add(rbox(L,0.30,P,0.02),0,0.42,0.06);
+      add(rbox(L+0.14,0.72,0.14,0.05),0,0.74,-P/2+0.05);
+      add(rbox(L-0.06,0.12,P-0.2,0.06),0,0.63,0.06,
+        new THREE.MeshStandardMaterial({color:0xe6e2d8,roughness:.92}));
+      for(const sx of [-1,1]) for(const sz of [-1,1])
+        add(new THREE.BoxGeometry(0.06,0.24,0.06),sx*(L/2-0.08),0.12,sz*(P/2-0.1),perna);
+      break;}
+    case 'cadeira':{
+      add(rbox(L,0.05,P,0.02),0,0.45,0);
+      add(rbox(L,0.42,0.04,0.03),0,0.70,-P/2+0.03);
+      for(const sx of [-1,1]) for(const sz of [-1,1])
+        add(new THREE.CylinderGeometry(0.017,0.014,0.45,10),sx*(L/2-0.05),0.225,sz*(P/2-0.05),perna);
+      break;}
+    case 'luminaria':{
+      add(new THREE.CylinderGeometry(0.17,0.20,0.03,26),0,0.015,0,perna);
+      const cur=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),
+        new THREE.Vector3(0,1.4,0),new THREE.Vector3(-0.5,1.92,0),new THREE.Vector3(-1.15,1.82,0)]);
+      add(new THREE.TubeGeometry(cur,40,0.016,8),0,0,0,perna);
+      const cup=add(new THREE.CylinderGeometry(0.13,0.17,0.20,22,1,true),-1.15,1.70,0,
+        new THREE.MeshStandardMaterial({color:0xf6efdf,roughness:.5,side:THREE.DoubleSide}));
+      const pl=new THREE.PointLight(0xffe6bd,3.2,4.5,2); pl.position.set(-1.15,1.60,0); g.add(pl);
+      break;}
+    case 'tapete':{
+      add(rbox(L,0.018,P,0.03),0,0.009,0,
+        new THREE.MeshStandardMaterial({color:cor,roughness:.98}));
+      break;}
+    default: add(rbox(L,A,P,0.03),0,A/2,0);
+  }
+  return g;
+}
+
+/* ---- carregador único, capaz de ler GLB comprimido ----------------------
+   GLB de fornecedor (Mint, Meshy, Polycam, marcenaria) quase nunca vem cru:
+   costuma ter Draco, Meshoptimizer ou textura KTX2. Um GLTFLoader pelado
+   falha em silêncio nesses casos. Um decodificador compartilhado, criado uma
+   vez e só baixado quando aparece geometria comprimida.                     */
+const DRACO_CDN=['https://cdn.mint.gg/runtime/draco/gltf/three-0.184.0/',
+                 'https://unpkg.com/three@0.170.0/examples/jsm/libs/draco/gltf/'];
+const KTX2_CDN='https://unpkg.com/three@0.170.0/examples/jsm/libs/basis/';
+let _gltf=null;
+function gltfLoader(){
+  if(_gltf) return _gltf;
+  const l=new GLTFLoader();
+  l.setDRACOLoader(new DRACOLoader().setDecoderPath(DRACO_CDN[0]));
+  try{ l.setKTX2Loader(new KTX2Loader().setTranscoderPath(KTX2_CDN).detectSupport(renderer)); }catch(e){}
+  l.setMeshoptDecoder(MeshoptDecoder);
+  _gltf=l; return l;
+}
+async function carregarGlb(url){
+  try{
+    const g=await gltfLoader().loadAsync(url);
+    return g.scene;
+  }catch(e){
+    /* decodificador fora do ar: tenta o espelho antes de desistir */
+    try{
+      const l=new GLTFLoader();
+      l.setDRACOLoader(new DRACOLoader().setDecoderPath(DRACO_CDN[1]));
+      l.setMeshoptDecoder(MeshoptDecoder);
+      const g=await l.loadAsync(url);
+      return g.scene;
+    }catch(e2){
+      throw new Error('não consegui decodificar o GLB — '+(e2.message||e.message));
+    }
+  }
+}
+function enquadrar(obj){
+  const cx=new THREE.Box3().setFromObject(obj);
+  const t=cx.getSize(new THREE.Vector3()), c=cx.getCenter(new THREE.Vector3());
+  const raio=Math.max(t.x,t.y,t.z)*0.5||1;
+  const d=raio/Math.tan(cam.fov*Math.PI/360)*1.85;
+  ctl.alvo.set(0,c.y,0); ctl.dist=clamp(d,1.2,26);
+  return {t,c};
+}
+function mostrar(item){
+  palco.clear(); cotas.clear();
+  objeto=null;
+  if(!item){ $('#vazio').style.display='flex'; $('#ficha').style.display='none';
+    $('#cap').textContent=''; $('#medidas').innerHTML=''; return; }
+  $('#vazio').style.display='none';
+  const g = item.glbUrl ? new THREE.Group() : pecaProcedural(item);
+  palco.add(g); objeto=g;
+  if(item.glbUrl){
+    carregarGlb(item.glbUrl).then(m=>{
+      m.traverse(n=>{ if(n.isMesh){n.castShadow=true;n.receiveShadow=true;} });
+      g.add(m); const cx=new THREE.Box3().setFromObject(m);
+      const t=cx.getSize(new THREE.Vector3());
+      const alvo=Math.max(...item.dim);
+      if(Math.max(t.x,t.y,t.z)>0){ const k=alvo/Math.max(t.x,t.y,t.z); m.scale.setScalar(k); }
+      const cx2=new THREE.Box3().setFromObject(m);
+      m.position.y-=cx2.min.y;
+      enquadrar(g); desenharCotas(item);
+    }).catch(err=>{
+      g.add(pecaProcedural(item)); enquadrar(g); desenharCotas(item);
+      console.warn('[WS Atelier] GLB não carregou:', err && err.message);
+      EST.falhaGlb=(err&&err.message)||'falha ao carregar o modelo';
+      if(EST.aba==='ficha') painel();
+    });
+  }
+  enquadrar(g); desenharCotas(item);
+  EST.selecionado=item;
+  $('#cap').textContent=item.nome;
+  const lj=LOJAS.find(l=>l.id===item.loja)||LOJAS[4];
+  $('#medidas').innerHTML=
+    `<div class="p">${item.dim[0].toFixed(2)} L × ${item.dim[1].toFixed(2)} A × ${item.dim[2].toFixed(2)} P m</div>`+
+    `<div class="p">${item.mat}</div>`+
+    `<div class="p">${lj.cidade}</div>`;
+  renderFicha(item);
+}
+function desenharCotas(item){
+  cotas.clear(); if(!EST.cotas||!objeto) return;
+  const cx=new THREE.Box3().setFromObject(objeto);
+  const t=cx.getSize(new THREE.Vector3()), c=cx.getCenter(new THREE.Vector3());
+  const m=new THREE.LineBasicMaterial({color:0xC9A961,transparent:true,opacity:.85});
+  const linha=(a,b)=>{ const g=new THREE.BufferGeometry().setFromPoints([a,b]);
+    cotas.add(new THREE.Line(g,m)); };
+  const x0=cx.min.x,x1=cx.max.x,y0=cx.min.y,y1=cx.max.y,z0=cx.min.z,z1=cx.max.z;
+  const o=0.12;
+  linha(new THREE.Vector3(x0,y0-o,z1),new THREE.Vector3(x1,y0-o,z1));
+  linha(new THREE.Vector3(x0,y0,z1),new THREE.Vector3(x0,y0-o*1.4,z1));
+  linha(new THREE.Vector3(x1,y0,z1),new THREE.Vector3(x1,y0-o*1.4,z1));
+  linha(new THREE.Vector3(x1+o,y0,z1),new THREE.Vector3(x1+o,y1,z1));
+  linha(new THREE.Vector3(x1,y0,z1),new THREE.Vector3(x1+o*1.4,y0,z1));
+  linha(new THREE.Vector3(x1,y1,z1),new THREE.Vector3(x1+o*1.4,y1,z1));
+  linha(new THREE.Vector3(x1+o,y0,z0),new THREE.Vector3(x1+o,y0,z1));
+  /* silhueta humana de 1,70 m para escala */
+  const hm=new THREE.LineBasicMaterial({color:0x556070,transparent:true,opacity:.5});
+  const px=x1+0.75, pts=[[0,0],[0,1.70]].map(([a,b])=>new THREE.Vector3(px,y0+b,z0));
+  cotas.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),hm));
+  for(const h of [0,1.70]) cotas.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(px-0.09,y0+h,z0),new THREE.Vector3(px+0.09,y0+h,z0)]),hm));
+}
+
+/* controle orbital */
+const ctl={yaw:0.7,pitch:0.24,dist:4,alvo:new THREE.Vector3(0,0.6,0),arrast:false,px:0,py:0,vy:0,vp:0};
+function aplicarCam(){
+  ctl.pitch=clamp(ctl.pitch,-0.25,1.35);
+  const cp=Math.cos(ctl.pitch);
+  cam.position.set(ctl.alvo.x+ctl.dist*cp*Math.sin(ctl.yaw),
+    ctl.alvo.y+ctl.dist*Math.sin(ctl.pitch), ctl.alvo.z+ctl.dist*cp*Math.cos(ctl.yaw));
+  cam.lookAt(ctl.alvo);
+}
+const cv=$('#cv');
+cv.addEventListener('pointerdown',e=>{ctl.arrast=true;ctl.px=e.clientX;ctl.py=e.clientY;
+  EST.girar=false;$('#btGira').classList.remove('on');cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{ if(!ctl.arrast)return;
+  ctl.vy+=-(e.clientX-ctl.px)*0.0036; ctl.vp+=(e.clientY-ctl.py)*0.0036;
+  ctl.px=e.clientX; ctl.py=e.clientY; });
+addEventListener('pointerup',()=>ctl.arrast=false);
+cv.addEventListener('wheel',e=>{e.preventDefault();
+  ctl.dist=clamp(ctl.dist*(1+Math.sign(e.deltaY)*0.1),0.7,26)},{passive:false});
+let pinch=0;
+cv.addEventListener('touchmove',e=>{ if(e.touches.length!==2)return; e.preventDefault();
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+    e.touches[0].clientY-e.touches[1].clientY);
+  if(pinch) ctl.dist=clamp(ctl.dist/(d/pinch),0.7,26); pinch=d; },{passive:false});
+cv.addEventListener('touchend',()=>pinch=0);
+
+function redim(){ const v=$('#visor'), w=v.clientWidth, h=v.clientHeight;
+  renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
+addEventListener('resize',redim);
+
+/* ------------------------------------------------------------------ painel */
+function painel(){
+  if(EST.aba==='catalogo') painelCatalogo();
+  else if(EST.aba==='criar') painelCriar();
+  else painelFicha();
+}
+
+function painelCatalogo(){
+  const lista=filtrados();
+  corpo.innerHTML=`
+  <div class="sec">
+    <input class="busca" id="q" placeholder="sofá cinza para sala pequena…" value="${EST.consulta}">
+    <div class="chips">
+      ${Object.entries(CATS).map(([k,v])=>
+        `<button class="chip ${EST.cats.has(k)?'on':''}" data-cat="${k}">${v}</button>`).join('')}
+    </div>
+    <div class="lin"><label>até</label>
+      <input type="range" id="rPreco" min="0" max="12000" step="500" value="${EST.precoMax}">
+      <span class="v">${EST.precoMax?brl(EST.precoMax):'tudo'}</span></div>
+    <div class="lin"><label>raio</label>
+      <select id="sRaio">
+        <option value="0"   ${EST.raio===0?'selected':''}>qualquer lugar</option>
+        <option value="15"  ${EST.raio===15?'selected':''}>até 15 km de BH</option>
+        <option value="40"  ${EST.raio===40?'selected':''}>região metropolitana</option>
+        <option value="400" ${EST.raio===400?'selected':''}>Minas Gerais</option>
+      </select></div>
+    <div class="hint">A busca entende intenção: <b>pequeno</b>, <b>barato</b>, <b>madeira</b>,
+      <b>quarto</b> e o nome da loja funcionam como filtro.</div>
+  </div>
+  <div class="sec">
+    <h4>${lista.length} ${lista.length===1?'resultado':'resultados'}</h4>
+    ${lista.length? lista.map(it=>`
+      <div class="item ${EST.selecionado&&EST.selecionado.id===it.id?'on':''}" data-id="${it.id}">
+        <div class="ic">${icone(it.cat)}</div>
+        <div class="tx"><b>${it.nome}</b><small>${it._loja.nome} · ${it._km<1?'aqui':it._km.toFixed(0)+' km'}${it.autoral?' · seu':''}</small></div>
+        <div class="pr">${brl(it.preco)}<small>${it.prazo}</small></div>
+      </div>`).join('')
+    : `<div class="hint">Nada encontrado. Tente termos mais amplos —
+        a busca exige que <b>todas</b> as palavras façam sentido.</div>`}
+  </div>
+  <div class="sec">
+    <h4>Acervo</h4>
+    <button class="bt mini" id="btGlb">Importar um GLB pronto</button>
+    <div class="hint" style="margin-top:8px">Só entram modelos com licença comercial declarada.
+      Modelo de terceiro sem licença não vai para o produto.</div>
+  </div>`;
+  $('#q').oninput=e=>{EST.consulta=e.target.value; const p=e.target.selectionStart;
+    painel(); const q=$('#q'); q.focus(); q.setSelectionRange(p,p);};
+  $$('[data-cat]').forEach(b=>b.onclick=()=>{
+    const c=b.dataset.cat; EST.cats.has(c)?EST.cats.delete(c):EST.cats.add(c); painel();});
+  $('#rPreco').oninput=e=>{EST.precoMax=+e.target.value; painel();};
+  $('#sRaio').onchange=e=>{EST.raio=+e.target.value; painel();};
+  $$('[data-id]').forEach(n=>n.onclick=()=>{
+    mostrar(todos().find(x=>x.id===n.dataset.id)); painel();});
+  $('#btGlb').onclick=()=>$('#fGlb').click();
+}
+function icone(c){
+  const p={sofa:'M3 13v5h18v-5M3 13V9a2 2 0 012-2h14a2 2 0 012 2v4M6 13h12',
+    poltrona:'M6 18v-8a3 3 0 013-3h6a3 3 0 013 3v8M6 12h12M9 18v2M15 18v2',
+    mesa:'M3 9h18M5 9v10M19 9v10',
+    armario:'M4 6h16v12H4zM12 6v12M8 11h1M15 11h1',
+    cama:'M3 17v-5a2 2 0 012-2h14a2 2 0 012 2v5M3 17h18M3 17v3M21 17v3M7 10V7h5v3',
+    cadeira:'M7 4v9h10V4M7 13v7M17 13v7M6 13h12',
+    luminaria:'M12 21V8M8 21h8M8 8h8l-2-5h-4z',
+    tapete:'M3 8h18v8H3zM6 8v8M18 8v8'}[c]||'M4 4h16v16H4z';
+  return `<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="${p}"/></svg>`;
+}
+
+const ANGULOS=['frente','três quartos','lateral','costas','de cima','detalhe do tecido',
+  'pé / base','encosto','braço','etiqueta'];
+function painelCriar(){
+  const c=custoTotal();
+  corpo.innerHTML=`
+  <div class="sec">
+    <h4>Fotos do móvel · ${CRIAR.fotos.length} de 10</h4>
+    ${CRIAR.fotos.length? '' : `
+    <div class="drop" id="dz">
+      <div class="t">Arraste as fotos aqui</div>
+      <div class="u">Quanto mais ângulos, mais fiel o modelo.<br>Fundo limpo e luz difusa.</div>
+    </div>`}
+    <div class="gal">
+      ${CRIAR.fotos.map((f,i)=>`<div class="th"><img src="${f}" alt=""><button class="rm" data-rm="${i}">×</button></div>`).join('')}
+      ${CRIAR.fotos.length<10?'<div class="th add" id="add">+</div>':''}
+    </div>
+    <div class="hint" style="margin-top:10px">Próximo ângulo sugerido:
+      <b>${ANGULOS[Math.min(CRIAR.fotos.length,ANGULOS.length-1)]}</b></div>
+  </div>
+  <div class="sec">
+    <h4>Motor</h4>
+    <div class="opts">
+      ${Object.keys(CUSTO.modelo).map(k=>`<button class="opt ${CRIAR.cfg.modelo===k?'on':''}"
+        data-c="modelo" data-v="${k}">${k==='meshy-5'?'Meshy 5':'Meshy 6'}
+        <small>${k==='meshy-5'?'rápido':'mais fiel'}</small></button>`).join('')}
+    </div>
+    <h4 style="margin-top:16px">Textura</h4>
+    <div class="opts">
+      ${Object.keys(CUSTO.textura).map(k=>`<button class="opt ${CRIAR.cfg.textura===k?'on':''}"
+        data-c="textura" data-v="${k}">${(+k/1024)}K<small>+${CUSTO.textura[k]}</small></button>`).join('')}
+    </div>
+    <h4 style="margin-top:16px">Malha</h4>
+    <div class="opts">
+      ${Object.keys(CUSTO.poly).map(k=>`<button class="opt ${CRIAR.cfg.poly===k?'on':''}"
+        data-c="poly" data-v="${k}">${(+k/1000)}k<small>+${CUSTO.poly[k]}</small></button>`).join('')}
+    </div>
+    <div class="lin" style="margin-top:14px">
+      <label>PBR completo</label>
+      <button class="opt ${CRIAR.cfg.pbr?'on':''}" id="btPbr" style="flex:0 0 92px">
+        ${CRIAR.cfg.pbr?'ligado':'desligado'}<small>+${CUSTO.pbr}</small></button>
+    </div>
+    <div class="hint">PBR gera rugosidade, metalicidade e normal separados —
+      é o que faz o tecido parecer tecido sob luz que muda.</div>
+  </div>
+  <div class="sec">
+    <h4>Identificação</h4>
+    <div class="lin"><label>nome</label>
+      <input type="text" id="iNome" value="${CRIAR.nome}" placeholder="Sofá retrátil 2,20 m"></div>
+    <div class="lin"><label>preço</label>
+      <input type="number" id="iPreco" value="${CRIAR.preco}" placeholder="6490"></div>
+  </div>
+  <div class="custo"><span class="k">Custo estimado</span><span class="v">${c} créditos</span></div>
+  <div class="hint">${CRIAR.fotos.length>1?`${CRIAR.fotos.length} fotos · +${(CRIAR.fotos.length-1)*CUSTO.porFoto} pelo conjunto`:'1 crédito extra por foto adicional'}</div>
+  <button class="bt ouro" id="btGerar" ${CRIAR.fotos.length?'':'disabled'}>
+    ${CRIAR.estado==='gerando'?'gerando…':'Gerar modelo 3D'}</button>
+  ${CRIAR.msg?`<div class="aviso ${CRIAR.estadoErro?'err':'ok'}">${CRIAR.msg}</div>`:''}
+  <div class="sec" style="margin-top:24px">
+    <h4>Antes de gerar</h4>
+    <div class="hint">Fotografe com o móvel <b>inteiro no quadro</b>, fundo neutro, sem sombra dura
+      e sem pessoas. Etiqueta e detalhe de tecido melhoram muito o resultado.</div>
+  </div>`;
+  const dz=$('#dz'); if(dz) dz.onclick=()=>$('#fFotos').click();
+  const ad=$('#add'); if(ad) ad.onclick=()=>$('#fFotos').click();
+  $$('[data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();
+    CRIAR.fotos.splice(+b.dataset.rm,1); painel();});
+  $$('[data-c]').forEach(b=>b.onclick=()=>{CRIAR.cfg[b.dataset.c]=b.dataset.v; painel();});
+  $('#btPbr').onclick=()=>{CRIAR.cfg.pbr=!CRIAR.cfg.pbr; painel();};
+  $('#iNome').oninput=e=>CRIAR.nome=e.target.value;
+  $('#iPreco').oninput=e=>CRIAR.preco=e.target.value;
+  $('#btGerar').onclick=gerar;
+}
+
+async function gerar(){
+  if(!CRIAR.fotos.length) return;
+  CRIAR.estado='gerando'; CRIAR.estadoErro=false;
+  CRIAR.msg='Enviando '+CRIAR.fotos.length+' foto(s) para o motor…'; painel();
+  const corpoReq={ imagens:CRIAR.fotos, modelo:CRIAR.cfg.modelo,
+    textura:+CRIAR.cfg.textura, poly:+CRIAR.cfg.poly, pbr:CRIAR.cfg.pbr,
+    nome:CRIAR.nome||'Móvel sem nome', custo:custoTotal() };
+  const ep=window.WS_MESHY_ENDPOINT;
+  let url=null;
+  if(ep){
+    try{
+      const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(corpoReq)});
+      if(!r.ok) throw new Error('o servidor respondeu '+r.status);
+      const j=await r.json(); url=j.glb||j.url||null;
+      if(!url) throw new Error('resposta sem o arquivo GLB');
+    }catch(e){
+      CRIAR.estado='ocioso'; CRIAR.estadoErro=true;
+      CRIAR.msg='Falhou: '+e.message+'. Nenhum crédito foi consumido.'; painel(); return;
+    }
+  }
+  const item={
+    id:'ger-'+Date.now().toString(36),
+    nome:CRIAR.nome||'Móvel sem nome', cat:adivinharCat(CRIAR.nome), loja:'ws',
+    preco:+CRIAR.preco||0, dim:[1.6,0.8,0.8], cor:'#6f6a62',
+    mat:'gerado por IA', prazo:'a definir', sku:'WS-GER-'+Date.now().toString(36).toUpperCase(),
+    tags:(CRIAR.nome||'').toLowerCase().split(/\s+/).filter(Boolean),
+    autoral:true, glbUrl:url, custo:custoTotal(), fotos:CRIAR.fotos.length
+  };
+  EST.gerados.unshift(item);
+  CRIAR.estado='ocioso';
+  CRIAR.msg = ep
+    ? 'Pronto. O móvel entrou no seu acervo e já aparece no catálogo.'
+    : 'Modo demonstração — nenhum endpoint Meshy configurado, então gerei um volume aproximado. '
+      +'O móvel entrou no acervo para você testar o fluxo inteiro.';
+  mostrar(item); EST.aba='ficha'; sincronizarAbas(); painel();
+}
+function adivinharCat(n){
+  const t=semAcento(n||'');
+  for(const [k] of Object.entries(CATS)) if(t.includes(semAcento(k))) return k;
+  if(/sofa|estofad/.test(t))return 'sofa'; if(/poltrona/.test(t))return 'poltrona';
+  if(/mesa/.test(t))return 'mesa'; if(/rack|estante|aparador|armario/.test(t))return 'armario';
+  if(/cama/.test(t))return 'cama'; if(/cadeira|banqueta/.test(t))return 'cadeira';
+  if(/lumin|abajur|pendente/.test(t))return 'luminaria'; if(/tapete/.test(t))return 'tapete';
+  return 'armario';
+}
+
+function painelFicha(){
+  const it=EST.selecionado;
+  if(!it){ corpo.innerHTML=`<div class="sec"><div class="hint">
+    Escolha um móvel no catálogo para ver e editar a ficha.</div></div>`; return; }
+  const lj=LOJAS.find(l=>l.id===it.loja)||LOJAS[4];
+  corpo.innerHTML=`
+  <div class="sec">
+    <h4>Ficha do produto</h4>
+    <div class="lin"><label>nome</label><input type="text" id="fNome" value="${it.nome}"></div>
+    <div class="lin"><label>preço</label><input type="number" id="fPreco" value="${it.preco}"></div>
+    <div class="lin"><label>categoria</label><select id="fCat">
+      ${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${it.cat===k?'selected':''}>${v}</option>`).join('')}
+    </select></div>
+    <div class="lin"><label>loja</label><select id="fLoja">
+      ${LOJAS.map(l=>`<option value="${l.id}" ${it.loja===l.id?'selected':''}>${l.nome} · ${l.cidade}</option>`).join('')}
+    </select></div>
+  </div>
+  <div class="sec">
+    <h4>Dimensões reais (m)</h4>
+    <div class="lin"><label>largura</label>
+      <input type="range" id="dL" min="0.2" max="3.4" step="0.01" value="${it.dim[0]}">
+      <span class="v">${it.dim[0].toFixed(2)}</span></div>
+    <div class="lin"><label>altura</label>
+      <input type="range" id="dA" min="0.02" max="2.6" step="0.01" value="${it.dim[1]}">
+      <span class="v">${it.dim[1].toFixed(2)}</span></div>
+    <div class="lin"><label>profund.</label>
+      <input type="range" id="dP" min="0.2" max="3.2" step="0.01" value="${it.dim[2]}">
+      <span class="v">${it.dim[2].toFixed(2)}</span></div>
+    <div class="hint">A medida é o que faz o móvel <b>caber</b> no imóvel do cliente.
+      Ficha sem medida correta é a maior causa de devolução.</div>
+  </div>
+  <div class="sec">
+    <h4>Etiquetas de busca</h4>
+    <div>${it.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    <div class="lin" style="margin-top:10px"><label>adicionar</label>
+      <input type="text" id="fTag" placeholder="enter para incluir"></div>
+  </div>
+  <div class="sec">
+    <h4>Destino</h4>
+    <button class="bt ouro" id="btStudio">Enviar para o WS Studio 3D</button>
+    <button class="bt" id="btReal">Enviar para a Camada Real</button>
+    <button class="bt mini" id="btJson">Exportar ficha (JSON)</button>
+    <div class="hint" style="margin-top:9px">No Studio o móvel entra no projeto.
+      Na Camada Real ele vira <b>pino de compra</b> sobre a foto do imóvel.</div>
+  </div>
+  <div class="sec">
+    <h4>Licença</h4>
+    <div class="hint">${it.autoral
+      ? 'Gerado no Atelier a partir das suas fotos — a autoria é sua.'
+      : 'Catálogo de demonstração. Antes de publicar, registre a licença comercial do parceiro.'}</div>
+  </div>`;
+  const at=(campo,valor)=>{ it[campo]=valor; mostrar(it); painel(); };
+  $('#fNome').oninput=e=>{it.nome=e.target.value; $('#cap').textContent=it.nome; renderFicha(it);};
+  $('#fPreco').oninput=e=>{it.preco=+e.target.value||0; renderFicha(it);};
+  $('#fCat').onchange=e=>at('cat',e.target.value);
+  $('#fLoja').onchange=e=>at('loja',e.target.value);
+  ['dL','dA','dP'].forEach((id,i)=>$('#'+id).oninput=e=>{
+    it.dim[i]=+e.target.value; e.target.nextElementSibling.textContent=(+e.target.value).toFixed(2);
+    mostrar(it);});
+  $('#fTag').onkeydown=e=>{ if(e.key!=='Enter')return;
+    const v=e.target.value.trim(); if(v&&!it.tags.includes(v)) it.tags.push(v);
+    e.target.value=''; painel(); };
+  $('#btStudio').onclick=()=>enviar('ws:atelier-movel');
+  $('#btReal').onclick=()=>enviar('ws:atelier-pino');
+  $('#btJson').onclick=()=>{
+    const b=new Blob([JSON.stringify(limpar(it),null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download=(it.sku||'movel')+'.json'; a.click(); };
+}
+const limpar=it=>({sku:it.sku,nome:it.nome,categoria:it.cat,preco:it.preco,
+  dimensoes:{largura:it.dim[0],altura:it.dim[1],profundidade:it.dim[2]},
+  material:it.mat,prazo:it.prazo,loja:(LOJAS.find(l=>l.id===it.loja)||{}).nome,
+  cidade:(LOJAS.find(l=>l.id===it.loja)||{}).cidade,tags:it.tags,autoral:!!it.autoral});
+function enviar(tipo){
+  const it=EST.selecionado; if(!it) return;
+  const carga={tipo, movel:limpar(it), glb:it.glbUrl||null};
+  try{ parent.postMessage(carga,'*'); }catch(e){}
+  const bt=tipo==='ws:atelier-movel'?$('#btStudio'):$('#btReal');
+  const antes=bt.textContent; bt.textContent='enviado ✓';
+  setTimeout(()=>bt.textContent=antes,1800);
+}
+function renderFicha(it){
+  const f=$('#ficha'); if(!it){f.style.display='none';return;}
+  const lj=LOJAS.find(l=>l.id===it.loja)||LOJAS[4];
+  f.style.display='block';
+  f.innerHTML=`<h3>${it.nome}</h3>
+    <div class="lj">${lj.nome} · ${lj.cidade}/${lj.uf}</div>
+    <div class="pz">${it.preco?brl(it.preco):'sob consulta'}</div>
+    <div class="px">${it.preco?'à vista ou em até 10×':'peça sob medida'}</div>
+    <div class="lb"><span>medidas</span><span>${it.dim[0].toFixed(2)}×${it.dim[1].toFixed(2)}×${it.dim[2].toFixed(2)} m</span></div>
+    <div class="lb"><span>material</span><span>${it.mat}</span></div>
+    <div class="lb"><span>prazo</span><span>${it.prazo}</span></div>
+    <div class="lb"><span>código</span><span>${it.sku}</span></div>`;
+}
+
+/* --------------------------------------------------------------- entradas */
+const corpo=$('#corpo');
+function lerImagens(files){
+  const restantes=10-CRIAR.fotos.length;
+  [...files].filter(f=>f.type.startsWith('image/')).slice(0,restantes).forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>{ CRIAR.fotos.push(r.result); painel(); };
+    r.readAsDataURL(f);
+  });
+}
+$('#fFotos').onchange=e=>{lerImagens(e.target.files); e.target.value='';};
+$('#fGlb').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const url=URL.createObjectURL(f);
+  const item={id:'imp-'+Date.now().toString(36),nome:f.name.replace(/\.(glb|gltf)$/i,''),
+    cat:adivinharCat(f.name),loja:'ws',preco:0,dim:[1.6,0.8,0.8],cor:'#6f6a62',
+    mat:'importado',prazo:'—',sku:'WS-IMP-'+Date.now().toString(36).toUpperCase(),
+    tags:['importado'],autoral:true,glbUrl:url};
+  EST.gerados.unshift(item); mostrar(item); EST.aba='ficha'; sincronizarAbas(); painel();
+  e.target.value='';
+};
+['dragenter','dragover'].forEach(ev=>addEventListener(ev,e=>{e.preventDefault();
+  $$('.drop').forEach(d=>d.classList.add('hot'));}));
+['dragleave','drop'].forEach(ev=>addEventListener(ev,e=>{e.preventDefault();
+  $$('.drop').forEach(d=>d.classList.remove('hot'));}));
+addEventListener('drop',e=>{
+  e.preventDefault(); const fs=[...(e.dataTransfer.files||[])]; if(!fs.length)return;
+  const glb=fs.find(f=>/\.(glb|gltf)$/i.test(f.name));
+  if(glb){ $('#fGlb').files=e.dataTransfer.files; $('#fGlb').onchange({target:{files:[glb],value:''}}); return; }
+  EST.aba='criar'; sincronizarAbas(); lerImagens(fs);
+});
+
+function sincronizarAbas(){
+  $$('#abas button').forEach(b=>b.classList.toggle('on',b.dataset.aba===EST.aba));
+}
+$$('#abas button').forEach(b=>b.onclick=()=>{EST.aba=b.dataset.aba; sincronizarAbas(); painel();});
+$('#btGira').onclick=()=>{EST.girar=!EST.girar; $('#btGira').classList.toggle('on',EST.girar);};
+$('#btLuz').onclick=()=>{const o=['loja','dia','noite'];
+  aplicarLuz(o[(o.indexOf(EST.luz)+1)%3]);};
+$('#btCota').onclick=()=>{EST.cotas=!EST.cotas; $('#btCota').classList.toggle('on',EST.cotas);
+  desenharCotas(EST.selecionado);};
+$('#btFoto').onclick=()=>{
+  const pr=renderer.getPixelRatio();
+  renderer.setPixelRatio(Math.min(3,pr*2)); redim(); renderer.render(scene,cam);
+  cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download=((EST.selecionado||{}).sku||'ws-atelier')+'.png'; a.click();
+    renderer.setPixelRatio(pr); redim(); });
+};
+$('#btVoltar').onclick=()=>parent.postMessage({tipo:'ws:voltar-mundo'},'*');
+if(parent!==window) $('#btVoltar').style.display='block';
+addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.tipo==='ws:atelier-abrir'){ EST.aba=d.aba||'catalogo'; sincronizarAbas(); painel(); }
+});
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select')) return;
+  if(e.key==='g') $('#btGira').click();
+  if(e.key==='l') $('#btLuz').click();
+  if(e.key==='c') $('#btCota').click();
+});
+
+/* ------------------------------------------------------------------- laço */
+let ult=performance.now();
+function laco(){
+  requestAnimationFrame(laco);
+  const t=performance.now(), dt=Math.min((t-ult)/1000,0.05); ult=t;
+  ctl.yaw+=ctl.vy; ctl.pitch+=ctl.vp; ctl.vy*=0.84; ctl.vp*=0.84;
+  if(EST.girar && !ctl.arrast) ctl.yaw+=dt*0.36;
+  aplicarCam();
+  renderer.render(scene,cam);
+}
+
+aplicarLuz('loja'); redim(); $('#btGira').classList.add('on');
+sincronizarAbas(); painel(); laco();
+window.__WS_OK=true;
+
+window.WS_ATELIER={pontuar,expandir,distanciaKm,filtrados,custoTotal,adivinharCat,
+  CATALOGO,LOJAS,CATS,EST,CRIAR,CUSTO,semAcento};
+</script>
+</body>
+</html>

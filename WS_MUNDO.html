@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WS GLOBAL 3D — White Stone</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1016;font-family:'Segoe UI',system-ui,sans-serif}
+#app{position:fixed;inset:0}
+.panel{position:fixed;background:rgba(12,18,26,.84);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.09);border-radius:14px;color:#dfe9f2;font-size:13px}
+#hud{top:14px;left:14px;width:312px;padding:14px 16px;z-index:10}
+#hud h1{margin:0 0 2px;font-size:15px;letter-spacing:.4px;color:#fff}
+#hud .sub{color:#8fa8bd;font-size:11px;margin-bottom:10px}
+.row{display:flex;gap:6px;align-items:center;margin:7px 0}
+.row label{width:86px;color:#9db4c8;font-size:12px}
+input[type=range]{flex:1;accent-color:#e0a63c}
+select,input[type=text]{background:#141d28;border:1px solid #2a3947;color:#e8f1f8;border-radius:8px;padding:6px 8px;font-size:12.5px;outline:none}
+#q{flex:1;min-width:0}
+button{background:#e0a63c;border:0;color:#1a1408;font-weight:600;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px}
+button:hover{filter:brightness(1.1)}
+button.ghost{background:#17222e;color:#cfdeea;border:1px solid #2a3947;font-weight:500}
+button.ghost:hover{border-color:#e0a63c;color:#fff;filter:none}
+#res{max-height:150px;overflow:auto;margin-top:4px}
+.ri{padding:6px 8px;border-radius:7px;cursor:pointer;color:#c9d9e6;font-size:12px}
+.ri:hover{background:#1d2a38}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+.chip{background:#17222e;border:1px solid #2a3947;color:#cfdeea;border-radius:20px;padding:4px 10px;font-size:11.5px;cursor:pointer}
+.chip:hover{border-color:#e0a63c;color:#fff}
+.stats{display:flex;gap:12px;color:#8fa8bd;font-size:11.5px;margin-top:8px;flex-wrap:wrap}
+.stats b{color:#e8f1f8;font-weight:600}
+.hint{color:#7d94a8;font-size:11px;line-height:1.5;margin-top:8px}
+#attr{right:10px;bottom:10px;padding:5px 10px;font-size:10.5px;color:#b7c8d6;max-width:52vw;border-radius:8px;z-index:9}
+#place{color:#e0a63c;font-weight:600}
+#wx{color:#9fd8ff}
+.overlay{position:fixed;inset:0;background:rgba(8,12,17,.9);display:flex;align-items:center;justify-content:center;z-index:50;color:#dfe9f2;text-align:center}
+.overlay .box{max-width:460px;padding:28px;background:#101823;border:1px solid #263543;border-radius:16px}
+.hide{display:none!important}
+.spin{width:34px;height:34px;border:3px solid #2a3947;border-top-color:#e0a63c;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#fatal{position:fixed;left:50%;transform:translateX(-50%);top:8px;z-index:99;background:#5b1d1d;color:#ffd9d9;padding:8px 14px;border-radius:10px;display:none;font:12px monospace;max-width:80vw}
+ol{text-align:left;font-size:12.5px;line-height:1.7;color:#c9d9e6;padding-left:18px}
+code{background:#182430;padding:1px 5px;border-radius:5px;font-size:11.5px}
+/* ===== card do imóvel ===== */
+#card{right:14px;top:14px;width:336px;max-height:calc(100vh - 90px);overflow:auto;z-index:12;padding:0}
+#card .ph{width:100%;height:180px;border-radius:14px 14px 0 0;display:block;object-fit:cover;background:#152030}
+#card .body{padding:14px 16px 16px}
+#card h2{margin:0;font-size:16px;color:#fff}
+#card .end{color:#8fa8bd;font-size:11.5px;margin:2px 0 8px}
+#card .preco{color:#e0a63c;font-size:19px;font-weight:700;margin:4px 0 10px}
+#card .specs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+#card .sp{background:#17222e;border:1px solid #2a3947;border-radius:8px;padding:4px 9px;font-size:11.5px;color:#cfdeea}
+#card p.desc{color:#a9bccc;font-size:12px;line-height:1.55;margin:0 0 12px}
+#card .ctas{display:flex;flex-direction:column;gap:7px}
+#card .ctas button{width:100%;padding:9px 12px;font-size:13px}
+#card .fx{position:absolute;top:8px;right:8px;background:rgba(10,15,22,.75);border:1px solid #2a3947;color:#dfe9f2;width:28px;height:28px;border-radius:50%;font-weight:700;padding:0}
+#card .tag{position:absolute;top:8px;left:8px;background:#e0a63c;color:#1a1408;font-size:10.5px;font-weight:700;border-radius:6px;padding:3px 8px}
+#card .thumbs{display:flex;gap:5px;padding:8px 16px 0}
+#card .thumbs img{width:56px;height:38px;border-radius:6px;cursor:pointer;object-fit:cover;border:1px solid #2a3947}
+#card .thumbs img.on{border-color:#e0a63c}
+/* ===== lista de imóveis ===== */
+#imList{left:14px;bottom:14px;width:312px;max-height:42vh;overflow:auto;z-index:11;padding:12px 14px}
+#imList h3{margin:0 0 8px;font-size:13px;color:#fff}
+.imi{display:flex;gap:9px;padding:7px;border-radius:9px;cursor:pointer;align-items:center}
+.imi:hover{background:#1d2a38}
+.imi img{width:56px;height:42px;border-radius:7px;object-fit:cover}
+.imi .t{flex:1;min-width:0}
+.imi .n{font-size:12.5px;color:#e8f1f8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imi .p{font-size:11.5px;color:#e0a63c;font-weight:600}
+.imi .b{font-size:10.5px;color:#8fa8bd}
+/* ===== interior ===== */
+#cross{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 0 6px rgba(0,0,0,.7);z-index:20;pointer-events:none}
+#intBar{top:14px;left:50%;transform:translateX(-50%);padding:9px 14px;z-index:21;display:flex;gap:10px;align-items:center}
+#intBar b{color:#e0a63c}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .55s;z-index:40}
+/* ===== extras ===== */
+#compass{position:fixed;top:14px;right:14px;width:46px;height:46px;border-radius:50%;z-index:9;display:flex;align-items:center;justify-content:center}
+#cneedle{font-size:15px;font-weight:700;color:#e0a63c;transition:none}
+#toast{position:fixed;left:50%;bottom:56px;transform:translateX(-50%);background:rgba(12,18,26,.95);border:1px solid #e0a63c55;color:#e8f1f8;border-radius:10px;padding:9px 16px;font-size:12.5px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
+#onb .box{max-width:430px}
+#onb ul{text-align:left;font-size:13px;line-height:2;color:#c9d9e6;list-style:none;padding:0;margin:14px 0}
+#onb kbd{background:#182430;border:1px solid #2a3947;border-radius:5px;padding:1px 7px;font-size:11.5px;color:#e0a63c;font-family:inherit}
+#hud.mini > *:not(#hudTg):not(h1){display:none}
+#hud.mini{width:auto;padding:10px 52px 10px 16px}
+#hudTg{position:absolute;top:10px;right:10px;padding:2px 10px}
+#walkBar{top:14px;left:50%;transform:translateX(-50%);padding:9px 14px;z-index:21;display:flex;gap:10px;align-items:center}
+#svp{right:14px;bottom:44px;width:340px;height:224px;overflow:hidden;z-index:12;padding:0}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 62%,rgba(6,10,14,.36) 100%)}
+.sec{border-top:1px solid #223140;margin-top:9px;padding-top:7px}
+.sec h4{margin:0 0 5px;font-size:10.5px;color:#e0a63c;letter-spacing:.8px;text-transform:uppercase;user-select:none;font-weight:700}
+.sec.closed .secBody{display:none}
+</style>
+<script>
+addEventListener('error',function(e){var d=document.getElementById('fatal');if(d&&e.message){d.style.display='block';d.textContent='Erro: '+e.message;}});addEventListener('unhandledrejection',function(e){var d=document.getElementById('fatal');if(d){d.style.display='block';d.textContent='Erro (async): '+((e.reason&&e.reason.message)||e.reason);}});
+</script>
+<script>
+window.__WS_ERR=null;
+window.addEventListener('error',e=>{if(!window.__WS_ERR)window.__WS_ERR=(e.message||'erro');},true);
+setTimeout(function(){
+  if(window.__WS_OK)return;
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;z-index:999;background:#0c121a;color:#e8f1f8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:Segoe UI,sans-serif';
+  var file=location.protocol==='file:';
+  d.innerHTML='<div style="font-size:19px;letter-spacing:.3em;font-style:italic;font-family:Georgia,serif">WS GLOBAL 3D</div>'+
+    '<div style="max-width:430px;font-size:13px;line-height:1.75;margin-top:16px;color:#9fb3c4">O mundo 3D não conseguiu iniciar.<br>'+
+    '<span style="color:#e0a63c;font-size:11.5px">'+String(window.__WS_ERR||'módulos não carregados').slice(0,150)+'</span><br><br>'+
+    (file?'Abra por um servidor local (python -m http.server 8080), não por duplo clique.':'Verifique a internet (o motor carrega da CDN na primeira vez) e a chave do Google no ws-config.json.')+'</div>'+
+    '<button onclick="location.reload()" style="margin-top:20px;background:#e0a63c;border:0;color:#1a1408;font-weight:600;border-radius:8px;padding:9px 22px;cursor:pointer">Tentar novamente</button>';
+  document.body.appendChild(d);
+},10000);
+</script>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+ "3d-tiles-renderer":"https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.4.27/build/index.js",
+ "3d-tiles-renderer/plugins":"https://cdn.jsdelivr.net/npm/3d-tiles-renderer@0.4.27/build/index.plugins.js"
+}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="fatal"></div>
+
+<div id="hud" class="panel">
+ <button id="hudTg" class="ghost">−</button>
+ <h1>White Stone · Mundo Real 3D</h1>
+ <div class="sub">Google Photorealistic 3D Tiles — planeta inteiro navegável</div>
+ <div class="row"><input type="text" id="q" placeholder="endereço, bairro, cidade ou lat, lon"><button id="go">Ir</button></div>
+ <div id="res"></div>
+ <div class="chips" id="chips"></div>
+ <div class="sec"><h4>Ações</h4><div class="secBody">
+ <div class="row" style="gap:6px">
+  <button id="imBtn" class="ghost" style="flex:1">Imóveis</button>
+  <button id="tourBtn" class="ghost" style="flex:1">Tour</button>
+  <button id="btnWalk" class="ghost" style="flex:1">Andar (R)</button>
+ </div>
+ <div class="row" style="gap:6px">
+  <button id="shotBtn" class="ghost" style="flex:1">Foto</button>
+  <button id="shareBtn" class="ghost" style="flex:1">Copiar link</button>
+ </div>
+ </div></div>
+ <div class="sec closed"><h4>Ambiente — sol · clima · estação</h4><div class="secBody">
+ <div class="row"><label>Hora (céu)</label><input type="range" id="hora" min="0" max="24" step="0.05"><span id="horaV" style="width:44px;text-align:right"></span></div>
+ <div class="row"><label>Dia do ano</label><input type="range" id="doy" min="1" max="365" step="1"><span id="doyV" style="width:44px;text-align:right"></span></div>
+ <div class="row"><label>Exposição</label><input type="range" id="expo" min="0.4" max="1.8" step="0.05" value="1"></div>
+ </div></div>
+ <div class="sec closed"><h4>Sistema — desempenho</h4><div class="secBody">
+ <div class="row"><label>Velocidade</label><input type="range" id="spd" min="15" max="1200" step="5" value="160"><span id="spdV" style="width:56px;text-align:right">160 m/s</span></div>
+ <div class="row"><label>Qualidade</label><select id="qual"><option value="ultra">Ultra</option><option value="alta" selected>Alta</option><option value="media">Média</option><option value="baixa">Básica</option></select></div>
+ </div></div>
+ <div class="stats"><span>local: <b id="place">Vila da Serra</b></span><span id="coord"></span></div>
+ <div class="stats"><span><b id="fps">—</b></span><span>altura <b id="alt">—</b></span><span id="wx">clima —</span></div>
+ <div class="hint">Arraste: orbitar · Roda: zoom · <b>WASD</b> voar · <b>E/Q</b> sobe/desce · <b>Shift</b> turbo · 2× clique: focar · <b>R</b>: andar na rua · clique no <b>pin dourado</b>: ficha.</div>
+</div>
+
+<div id="attr" class="panel">Dados do mapa: © Google</div>
+<div id="compass" class="panel" title="Norte"><span id="cneedle">N</span></div>
+<div id="card" class="panel hide"></div>
+<div id="imList" class="panel hide"><h3>Imóveis White Stone</h3><div id="imItems"></div></div>
+<div id="cross" class="hide"></div>
+<div id="intBar" class="panel hide"><span id="intTxt"><b>Interior</b> — clique para ativar o mouse · WASD anda</span><button id="intFurn" class="ghost">Móveis: ligados</button><button id="intExit">Sair do imóvel</button></div>
+<div id="fade"></div>
+<div id="vig"></div>
+<div id="fpsBar" class="panel hide"><span><b style="color:#e0a63c">Voo livre</b> · WASD voa · Espaço sobe · C desce · Shift acelera · mouse olha</span><button id="fpsExit">Sair (F)</button></div>
+<div id="walkBar" class="panel hide"><span><b style="color:#e0a63c">Modo rua</b> · WASD anda · Shift corre · mouse olha</span><button id="svBtn" class="ghost">Street View</button><button id="walkExit">Voar (R)</button></div>
+<div id="svp" class="panel hide"></div>
+<div id="toast"></div>
+
+<div id="loading" class="overlay"><div class="box"><div class="spin"></div>Carregando o mundo real…<div class="hint">os primeiros tiles podem levar alguns segundos</div></div></div>
+
+<div id="onb" class="overlay hide"><div class="box"><b style="font-size:16px">Bem-vindo ao Mundo Real 3D da White Stone</b>
+ <ul>
+  <li><kbd>arrastar</kbd> orbitar · <kbd>roda</kbd> zoom · <kbd>W A S D</kbd> voar</li>
+  <li><kbd>Shift</kbd> turbo · <kbd>E</kbd>/<kbd>Q</kbd> sobe/desce · <kbd>2× clique</kbd> focar ponto</li>
+  <li>Clique nos <b style="color:#e0a63c">pins dourados</b> para abrir um imóvel — e <b>entre nele</b> em 1ª pessoa</li>
+ </ul>
+ <button id="onbOk">Começar a explorar</button>
+</div></div>
+
+<div id="keydlg" class="overlay hide"><div class="box"><b>Chave Google (Map Tiles API)</b>
+ <p class="hint">Cole a chave do Google (Map Tiles API). Ela fica salva só neste navegador e tem prioridade sobre o ws-config.json:</p>
+ <div class="row"><input type="text" id="keyin" placeholder="AIza..." style="flex:1"><button id="keyok">Usar</button></div>
+</div></div>
+
+<div id="help" class="overlay hide"><div class="box"><b>Os tiles não carregaram</b>
+ <p class="hint" id="helpmsg"></p>
+ <ol>
+  <li>Abra pelo <b>iniciar-mundo-real.bat</b> (via <code>http://localhost:8080</code>) — <code>file://</code> não envia Referer.</li>
+  <li>No Google Cloud: <b>Map Tiles API</b> ativada e billing ativo.</li>
+  <li>Restrições da chave: inclua <code>http://localhost:8080/*</code>.</li>
+  <li>Recarregue a página.</li>
+ </ol>
+ <div class="row" style="justify-content:center;gap:8px"><button id="swapKey">Usar outra chave</button><button class="ghost" onclick="document.getElementById('help').classList.add('hide')">Fechar</button></div>
+</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { Sky } from 'three/addons/objects/Sky.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { TilesRenderer } from '3d-tiles-renderer';
+import { GoogleCloudAuthPlugin, GLTFExtensionsPlugin } from '3d-tiles-renderer/plugins';
+
+/* ============ estado global ============ */
+const $=id=>document.getElementById(id);
+const D2R=Math.PI/180;
+const now=new Date();
+const state={
+  lat:-19.9691,lon:-43.9337,   /* Vale do Sereno — mesma vista do atalho */
+  hour:now.getHours()+now.getMinutes()/60,
+  doy:Math.floor((now-new Date(now.getFullYear(),0,0))/864e5),
+  quality:'alta',speed:160,expo:1.0,
+  mode:'fly',          // 'fly' | 'interior'
+  autoQ:true,          // auto-degradação de qualidade por FPS
+  cloud:0, rainMM:0    // preenchido pela Onda 4 (Open-Meteo)
+};
+const QUAL={ultra:4,alta:8,media:18,baixa:30};
+const hooks=[];        // fn(dt,t) chamadas a cada frame pelas ondas 2–5
+
+function toast(msg,ms){
+  const t=$('toast');t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,ms||2600);
+}
+
+/* ============ cena / renderer ============ */
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.35,200000);
+/* A câmera nasce ACIMA do terreno. Antes ela nascia em (700,4600,700) olhando
+   para a origem (0,0,0) — que fica abaixo do solo de Belo Horizonte, a ~1150 m
+   de altitude elipsoidal. O usuário via um void preto até o primeiro snap. */
+const ALT_INICIAL=750, PISO_PALPITE=1150;
+camera.position.set(ALT_INICIAL*0.65, PISO_PALPITE+ALT_INICIAL, ALT_INICIAL*0.65);
+const renderer=new THREE.WebGLRenderer({antialias:true,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.xr.enabled=true;
+$('app').appendChild(renderer.domElement);
+{const _pm=new THREE.PMREMGenerator(renderer);scene.environment=_pm.fromScene(new RoomEnvironment(),0.04).texture;_pm.dispose();}
+try{document.body.appendChild(VRButton.createButton(renderer));}catch(e){}
+scene.fog=new THREE.FogExp2(0xd7e4ee,0.9e-5);
+const BASE_FOG=0.9e-5;
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=0.09;
+controls.maxPolarAngle=0.499*Math.PI;
+controls.minDistance=8;controls.maxDistance=60000;
+controls.target.set(0,1150,0);
+
+const plc=new PointerLockControls(camera,renderer.domElement); // usado no interior (Onda 3)
+
+/* ============ céu + sol real ============ */
+const sky=new Sky();sky.scale.setScalar(150000);scene.add(sky);
+const skyU=sky.material.uniforms;
+skyU.turbidity.value=5;skyU.rayleigh.value=1.6;
+skyU.mieCoefficient.value=0.004;skyU.mieDirectionalG.value=0.85;
+const LSTM=-45;
+function eqTime(d){const B=2*Math.PI*(d-81)/364;return 9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B);}
+function declin(d){return 23.44*D2R*Math.sin(2*Math.PI*(284+d)/365);}
+function sunDir(h,d){
+  const latr=state.lat*D2R;
+  const dec=declin(d),sol=h+(eqTime(d)+4*(state.lon-LSTM))/60,H=(sol-12)*15*D2R;
+  const el=Math.asin(Math.sin(latr)*Math.sin(dec)+Math.cos(latr)*Math.cos(dec)*Math.cos(H));
+  const az=Math.PI+Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(latr)-Math.tan(dec)*Math.cos(latr));
+  return{v:new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el)),el,az};
+}
+let lastSun={v:new THREE.Vector3(0,1,0),el:1,az:0};
+function applySky(){
+  const s=sunDir(state.hour,state.doy);lastSun=s;
+  skyU.sunPosition.value.copy(s.v).multiplyScalar(10000);
+  const day=THREE.MathUtils.smoothstep(s.el,-0.09,0.35);
+  const cc=state.cloud/100;                       // nuvens reais (Onda 4)
+  skyU.turbidity.value=5+cc*11;
+  skyU.rayleigh.value=1.6+cc*1.2;
+  renderer.toneMappingExposure=state.expo*(0.22+0.85*day)*(1-cc*0.28);
+  scene.fog.density=BASE_FOG*(1+cc*2.4)*(state.mode==='interior'?0.35:1);
+  scene.fog.color.setHSL(0.58,0.28*(1-cc*0.5),0.10+0.72*day*(1-cc*0.25));
+  return day;
+}
+
+/* ============ Google Photorealistic 3D Tiles ============ */
+let tiles=null,rootLoaded=false,firstModel=false,firstSnapDone=false,snapAlt=ALT_INICIAL,groundY=PISO_PALPITE;
+function showHelp(msg){$('helpmsg').textContent=msg||'';$('help').classList.remove('hide');$('loading').classList.add('hide');}
+function initTiles(key){
+  if(tiles){scene.remove(tiles.group);tiles.dispose();}
+  rootLoaded=false;firstModel=false;window._kt=String(key).slice(-6);window._gkey=cleanKey(key);
+  tiles=new TilesRenderer();
+  tiles.registerPlugin(new GoogleCloudAuthPlugin({apiToken:key,autoRefreshToken:true}));
+  const draco=new DRACOLoader();
+  draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+  tiles.registerPlugin(new GLTFExtensionsPlugin({dracoLoader:draco}));
+  tiles.setCamera(camera);
+  tiles.setResolutionFromRenderer(camera,renderer);
+  tiles.errorTarget=QUAL[state.quality];
+  tiles.lruCache.minSize=900;tiles.lruCache.maxSize=2200;
+  tiles.addEventListener('load-tile-set',()=>{rootLoaded=true;});
+  tiles.addEventListener('load-model',()=>{
+    if(!firstModel){firstModel=true;$('loading').classList.add('hide');}
+  });
+  tiles.addEventListener('load-error',e=>{
+    const msg=String((e.error&&e.error.message)||e.error||'');
+    const d=document.getElementById('fatal');
+    if(d){d.style.display='block';d.textContent='Erro de tile: '+msg.slice(0,160)+' · chave em uso termina em ...'+(window._kt||'?');}
+    if(/400/.test(msg))showHelp('Código 400 = CHAVE INVÁLIDA para o Google (típico de chave antiga/revogada ou copiada com erro). A chave em uso termina em "...'+(window._kt||'?')+'". Gere/copie a chave NOVA no Google Cloud e: (a) atualize o campo googleMapsApiKey do ws-config.json, ou (b) clique em "Usar outra chave" abaixo.');
+    else if(/401|403|api|key|permission|denied/i.test(msg))showHelp('O Google recusou (403): confira Map Tiles API ativada, billing ativo, referrer http://localhost:8080/* e chave SEM restrição de API que exclua a Map Tiles API. Detalhe: '+msg.slice(0,140));
+  });
+  tiles.setLatLonToYUp(state.lat*D2R,state.lon*D2R);
+  scene.add(tiles.group);
+  /* Primeira visão = a mesma que o atalho "Vale do Sereno" entrega. */
+  try{ flyTo(state.lat,state.lon,ALT_INICIAL,'Vale do Sereno'); }catch(e){}
+  setTimeout(()=>{if(!firstModel)showHelp('Nenhum tile carregou em 15 s.');},15000);
+}
+
+/* lat/lon/h (m elipsoidal) → coordenada da cena (exato, segue o recentro do globo) */
+const _ecef=new THREE.Vector3();
+function llToScene(lat,lon,h,target){
+  target=target||new THREE.Vector3();
+  const ell=tiles&&tiles.ellipsoid;
+  if(ell&&ell.getCartographicToPosition){
+    ell.getCartographicToPosition(lat*D2R,lon*D2R,h,_ecef);
+    tiles.group.updateMatrixWorld();
+    return target.copy(_ecef).applyMatrix4(tiles.group.matrixWorld);
+  }
+  // fallback plano local (aprox)
+  const east=(lon-state.lon)*111320*Math.cos(state.lat*D2R);
+  const north=(lat-state.lat)*110540;
+  return target.set(east,h-1000,-north);
+}
+
+/* raycast vertical no mesh dos tiles: devolve y do 1º acerto ou null */
+const downRay=new THREE.Raycaster();downRay.firstHitOnly=true;
+const DOWN=new THREE.Vector3(0,-1,0);
+function groundAt(x,z,fromY){
+  if(!tiles)return null;
+  downRay.set(new THREE.Vector3(x,fromY==null?60000:fromY,z),DOWN);
+  const h=downRay.intersectObject(tiles.group,true);
+  return h.length?h[0].point.y:null;
+}
+
+/* ============ voar para lat/lon ============ */
+const onRecenter=[]; // ondas registram callbacks (reposicionar pins etc.)
+function flyTo(lat,lon,alt,name){
+  alt=alt||850;
+  state.lat=lat;state.lon=lon;
+  tiles.setLatLonToYUp(lat*D2R,lon*D2R);
+  groundY=900;firstSnapDone=false;snapAlt=alt;
+  controls.target.set(0,groundY,0);
+  camera.position.set(alt*0.65,Math.max(3400,groundY+alt),alt*0.65);
+  if(name)$('place').textContent=name;
+  $('coord').textContent=lat.toFixed(4)+', '+lon.toFixed(4);
+  onRecenter.forEach(f=>{try{f();}catch(e){}});
+}
+function trySnap(){
+  if(!tiles||!rootLoaded||firstSnapDone)return;
+  const gy=groundAt(0,0,60000);
+  if(gy!=null){
+    groundY=gy;firstSnapDone=true;
+    controls.target.set(0,groundY+3,0);
+    camera.position.set(snapAlt*0.65,groundY+snapAlt,snapAlt*0.65);
+  }
+}
+let _pisoY=null,_pisoT=0;
+/* Amostra o terreno periodicamente (raycast é caro) e guarda o último piso válido. */
+function amostrarPiso(){
+  if(!tiles)return;
+  const gy=groundAt(camera.position.x,camera.position.z,camera.position.y+2400);
+  if(gy!=null){_pisoY=gy;_pisoT=performance.now();}
+}
+/* Piso RÍGIDO — roda TODO frame, inclusive durante o voo cinematográfico.
+   Antes só rodava fora do tween e a cada 0,35 s: era assim que a câmera
+   terminava embaixo da terra ao clicar num imóvel. */
+function pisoRigido(){
+  if(state.mode==='interior')return;
+  /* rede de segurança: valor inválido em qualquer eixo devolve a câmera ao céu */
+  if(!isFinite(camera.position.x)||!isFinite(camera.position.y)||!isFinite(camera.position.z)){
+    camera.position.set(ALT_INICIAL*0.65,groundY+ALT_INICIAL,ALT_INICIAL*0.65);
+    controls.target.set(0,groundY,0); return;
+  }
+  /* antes do primeiro snap o terreno ainda não respondeu: usa o palpite */
+  if(!firstSnapDone && camera.position.y < groundY+60){
+    camera.position.y = groundY+ALT_INICIAL*0.5;
+    if(controls.target.y<groundY) controls.target.y=groundY;
+  }
+  if(_pisoY==null)return;
+  if(performance.now()-_pisoT>4000)return;          // amostra velha: não confia
+  const minY=_pisoY+(state.mode==='walk'?1.6:3.0);
+  if(camera.position.y<minY){
+    const d=minY-camera.position.y;
+    camera.position.y=minY;
+    if(controls.target.y<minY-1)controls.target.y+=d*0.6;
+    if(camTween){ camTween.p1.y=Math.max(camTween.p1.y,minY); }
+  }
+}
+function clampGround(){
+  if(!tiles||state.mode==='interior')return;
+  amostrarPiso();
+  pisoRigido();
+}
+
+/* ============ tween cinematográfico de câmera ============ */
+let camTween=null;
+const _tv=new THREE.Vector3();
+function tweenCam(posTo,tgtTo,dur,done){
+  const p0=camera.position.clone(),t0=controls.target.clone();
+  const mid=p0.clone().lerp(posTo,0.5);
+  mid.y+=Math.min(1400,p0.distanceTo(posTo)*0.28); // arco
+  camTween={p0,t0,p1:posTo.clone(),t1:tgtTo.clone(),mid,t:0,dur:dur||3.2,done};
+  controls.enabled=false;
+}
+function stepTween(dt){
+  if(!camTween)return;
+  camTween.t+=dt/camTween.dur;
+  let k=Math.min(1,camTween.t);
+  k=k*k*(3-2*k); // smoothstep
+  const a=_tv.copy(camTween.p0).lerp(camTween.mid,k);
+  camera.position.copy(a.lerp(camTween.mid.clone().lerp(camTween.p1,k),k)); // bézier quadrática
+  controls.target.copy(camTween.t0).lerp(camTween.t1,k);
+  if(camTween.t>=1){
+    const d=camTween.done;camTween=null;
+    if(state.mode!=='interior')controls.enabled=true;
+    if(d)d();
+  }
+}
+function cancelTween(){if(camTween){camTween=null;if(state.mode!=='interior')controls.enabled=true;}}
+
+/* ============ chave (runtime; nunca embutida) ============ */
+function cleanKey(k){return String(k||'').replace(/["'\s]/g,'');}
+async function getKey(){
+  const ov=cleanKey(localStorage.getItem('ws_gkey_override'));
+  if(ov)return ov;
+  try{
+    const r=await fetch('./ws-config.json',{cache:'no-store'});
+    if(r.ok){const j=await r.json();const ck=cleanKey(j.googleMapsApiKey);if(ck)return ck;}
+  }catch(e){}
+  const k=cleanKey(localStorage.getItem('ws_gkey'));
+  if(k)return k;
+  return new Promise(res=>{
+    $('keydlg').classList.remove('hide');
+    $('keyok').onclick=()=>{
+      const v=cleanKey($('keyin').value);
+      if(v){localStorage.setItem('ws_gkey',v);$('keydlg').classList.add('hide');res(v);}
+    };
+  });
+}
+/* trocar de chave sem mexer em arquivo (fica só neste navegador) */
+addEventListener('DOMContentLoaded',()=>{});
+document.addEventListener('click',e=>{
+  if(e.target&&e.target.id==='swapKey'){
+    $('help').classList.add('hide');
+    $('keyin').value='';
+    $('keydlg').classList.remove('hide');
+    $('keyok').onclick=()=>{
+      const v=cleanKey($('keyin').value);
+      if(v){
+        localStorage.setItem('ws_gkey_override',v);
+        localStorage.setItem('ws_gkey',v);
+        $('keydlg').classList.add('hide');
+        $('loading').classList.remove('hide');
+        initTiles(v);
+      }
+    };
+  }
+});
+async function getConfig(field){ // lê outros campos do ws-config.json (ex.: tomtomKey)
+  try{
+    const r=await fetch('./ws-config.json',{cache:'no-store'});
+    if(r.ok){const j=await r.json();return j[field]||null;}
+  }catch(e){}
+  return null;
+}
+
+/* ============ voo com teclado ============ */
+const keys={};
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.code==='Space')e.preventDefault();
+  keys[e.code]=true;
+});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+const fwd=new THREE.Vector3(),rgt=new THREE.Vector3(),mv=new THREE.Vector3();
+function keyMove(dt){
+  if(state.mode!=='fly'||camTween)return;
+  const sp=state.speed*((keys.ShiftLeft||keys.ShiftRight)?5:1);
+  camera.getWorldDirection(fwd);
+  rgt.crossVectors(fwd,camera.up).normalize();
+  mv.set(0,0,0);
+  if(keys.KeyW)mv.add(fwd);
+  if(keys.KeyS)mv.sub(fwd);
+  if(keys.KeyD)mv.add(rgt);
+  if(keys.KeyA)mv.sub(rgt);
+  if(keys.KeyE||keys.Space)mv.y+=1;
+  if(keys.KeyQ)mv.y-=1;
+  if(mv.lengthSq()>0){
+    mv.normalize().multiplyScalar(sp*dt);
+    camera.position.add(mv);controls.target.add(mv);
+  }
+}
+
+/* clique/duplo clique: pins têm prioridade (Onda 2 registra pinPick) */
+let pinPick=null; // (raycaster) => true se consumiu o clique
+const _ptr=new THREE.Vector2();let _downX=0,_downY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{_downX=e.clientX;_downY=e.clientY;});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(state.mode!=='fly')return;
+  if(Math.abs(e.clientX-_downX)>5||Math.abs(e.clientY-_downY)>5)return;
+  _ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(_ptr,camera);
+  /* modo rota tem prioridade sobre os pins */
+  if(rotaModo&&tiles){
+    const h=rc.intersectObject(tiles.group,true);
+    if(h.length){
+      const pt=h[0].point.clone();
+      if(!rotaA){
+        rotaA=pt; rotaMarco(pt,0x35c96b);
+        toast('Partida marcada — agora clique no destino');
+      }else{
+        rotaMarco(pt,0xe04b3c);
+        rotaTracar(rotaA,pt);
+        rotaA=null; rotaModo=false;
+        const c=$('rotaChip'); if(c){c.style.borderColor='';c.style.color='';}
+      }
+    }
+    return;
+  }
+  if(pinPick&&pinPick(rc))return;
+});
+renderer.domElement.addEventListener('dblclick',e=>{
+  if(!tiles||state.mode!=='fly')return;
+  _ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(_ptr,camera);
+  const h=rc.intersectObject(tiles.group,true);
+  if(h.length)controls.target.copy(h[0].point);
+});
+
+/* free-look estilo jogo: mover o mouse (sem botão) gira a câmera; arrastar (botão esq.) orbita como antes */
+const _flDir=new THREE.Vector3(),_flSph=new THREE.Spherical();
+addEventListener('pointermove',e=>{
+  if(fpsOn)return;
+  if(state.mode!=='fly'||camTween||e.buttons!==0)return;
+  if(e.target!==renderer.domElement)return;      // fora do canvas (painéis/botões) não gira
+  const mx=e.movementX||0,my=e.movementY||0;
+  if(!mx&&!my)return;
+  const dist=Math.max(4,camera.position.distanceTo(controls.target));
+  _flDir.subVectors(controls.target,camera.position);
+  _flSph.setFromVector3(_flDir);
+  _flSph.theta-=mx*0.0021;
+  _flSph.phi=THREE.MathUtils.clamp(_flSph.phi+my*0.0021,0.03,Math.PI-0.03);
+  _flSph.radius=dist;
+  controls.target.copy(camera.position).add(_flDir.setFromSpherical(_flSph));
+});
+
+/* ============ busca (Nominatim) ============ */
+async function doSearch(){
+  const q=$('q').value.trim();if(!q)return;
+  const m=q.match(/^(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)$/);
+  if(m){flyTo(+m[1],+m[2],850,q);return;}
+  if(window.google&&google.maps&&google.maps.Geocoder){
+    $('res').innerHTML='<div class="ri">buscando (Google)…</div>';
+    new google.maps.Geocoder().geocode({address:q,region:'br'},(rs,st)=>{
+      if(st==='OK'&&rs&&rs.length){
+        $('res').innerHTML='';
+        rs.slice(0,6).forEach(it=>{
+          const d=document.createElement('div');d.className='ri';
+          d.textContent=it.formatted_address;
+          d.onclick=()=>{$('res').innerHTML='';$('q').value='';const l=it.geometry.location;flyTo(l.lat(),l.lng(),850,it.formatted_address.split(',')[0]);};
+          $('res').appendChild(d);
+        });
+      }else $('res').innerHTML='<div class="ri">nada encontrado</div>';
+    });
+    return;
+  }
+  $('res').innerHTML='<div class="ri">buscando…</div>';
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=pt-BR&q='+encodeURIComponent(q));
+    const js=await r.json();
+    $('res').innerHTML=js.length?'':'<div class="ri">nada encontrado</div>';
+    js.forEach(it=>{
+      const d=document.createElement('div');d.className='ri';
+      d.textContent=it.display_name.split(',').slice(0,4).join(',');
+      d.onclick=()=>{$('res').innerHTML='';$('q').value='';flyTo(+it.lat,+it.lon,850,it.display_name.split(',')[0]);};
+      $('res').appendChild(d);
+    });
+  }catch(e){$('res').innerHTML='<div class="ri">erro na busca</div>';}
+}
+
+/* ============ presets ============ */
+const PRESETS=[
+  ['Vila da Serra',-19.9800,-43.9412,900],
+  ['Vale do Sereno',-19.9691,-43.9337,750],
+  ['Belvedere',-19.9745,-43.9440,750],
+  ['Centro N. Lima',-19.9858,-43.8470,900],
+  ['Pça Liberdade',-19.9320,-43.9378,650],
+  ['Savassi',-19.9370,-43.9350,650]
+];
+PRESETS.forEach(p=>{
+  const c=document.createElement('div');c.className='chip';c.textContent=p[0];
+  c.onclick=()=>flyTo(p[1],p[2],p[3],p[0]);
+  $('chips').appendChild(c);
+});
+
+/* ============ UI base ============ */
+function fmtH(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60);return hh+'h'+String(mm).padStart(2,'0');}
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function fmtDoy(d){const dt=new Date(new Date().getFullYear(),0,d);return dt.getDate()+' '+MES[dt.getMonth()];}
+$('hora').value=state.hour;$('horaV').textContent=fmtH(state.hour);
+$('hora').addEventListener('input',e=>{state.hour=+e.target.value;$('horaV').textContent=fmtH(state.hour);});
+$('doy').value=state.doy;$('doyV').textContent=fmtDoy(state.doy);
+$('doy').addEventListener('input',e=>{state.doy=+e.target.value;$('doyV').textContent=fmtDoy(state.doy);});
+$('expo').addEventListener('input',e=>{state.expo=+e.target.value;});
+$('spd').addEventListener('input',e=>{state.speed=+e.target.value;$('spdV').textContent=state.speed+' m/s';});
+$('qual').addEventListener('change',e=>{state.quality=e.target.value;state.autoQ=false;if(tiles)tiles.errorTarget=QUAL[state.quality];});
+$('go').onclick=doSearch;
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  if(tiles)tiles.setResolutionFromRenderer(camera,renderer);
+});
+$('coord').textContent=state.lat.toFixed(4)+', '+state.lon.toFixed(4);
+
+/* atribuições (exigência Google) */
+setInterval(()=>{
+  if(!tiles)return;
+  try{
+    const a=tiles.getAttributions?tiles.getAttributions():[];
+    const s=a.map(x=>x.value).filter(Boolean).join(' · ');
+    $('attr').textContent='Dados do mapa: © Google'+(s?' · '+s:'');
+  }catch(e){}
+},3000);
+
+/* ============ loop ============ */
+const clock=new THREE.Clock();
+let fpsN=0,fpsT=0,acc=0,fpsNow=60;
+function tick(){
+  window.__WS_OK=true;
+  const dt=Math.min(clock.getDelta(),0.05);
+  const t=clock.elapsedTime;
+  fpsN++;fpsT+=dt;acc+=dt;
+  keyMove(dt);
+  stepTween(dt);
+  if(state.mode!=='interior'||window._doll)controls.update();
+  if(acc>0.22){acc=0;trySnap();clampGround();}
+  pisoRigido();                       /* todo frame — nunca deixa entrar no terreno */
+  camera.updateMatrixWorld();
+  if(tiles){
+    tiles.setCamera(camera);
+    tiles.setResolutionFromRenderer(camera,renderer);
+    tiles.update();
+  }
+  applySky();
+  for(let i=0;i<hooks.length;i++)hooks[i](dt,t);
+  if(fpsT>=0.5){
+    fpsNow=fpsN/fpsT;
+    $('fps').textContent=Math.round(fpsNow)+' fps';
+    $('alt').textContent=Math.max(0,Math.round(camera.position.y-groundY))+' m';
+    fpsN=0;fpsT=0;
+  }
+  renderer.render(scene,camera);
+}
+/* boot é chamado no fim do arquivo (após todas as ondas registrarem) */
+/* ============================================================
+   ONDA 2 — Camada de imóveis White Stone
+   pins 3D clicáveis · ficha · voo cinematográfico · lista
+   ============================================================ */
+const DEMO_IMOVEIS=[
+ {id:'ws-one',nome:'WS One Vila da Serra',end:'Al. Oscar Niemeyer — Vila da Serra, Nova Lima',lat:-19.9789,lon:-43.9405,preco:2890000,area:182,quartos:4,suites:2,vagas:3,andar:18,status:'Lançamento',desc:'Torre ícone com vista definitiva para a Serra do Curral. Living integrado à varanda gourmet de 34 m².',demo:true},
+ {id:'reserva-sereno',nome:'Reserva do Sereno',end:'R. Ministro Orozimbo Nonato — Vale do Sereno, Nova Lima',lat:-19.9700,lon:-43.9330,preco:1690000,area:124,quartos:3,suites:1,vagas:2,andar:12,status:'Em obras',desc:'3 quartos com lazer completo e rooftop panorâmico no coração do Vale do Sereno.',demo:true},
+ {id:'belvedere-sky',nome:'Belvedere Sky Residence',end:'Av. Luiz Paulo Franco — Belvedere, BH',lat:-19.9762,lon:-43.9452,preco:3450000,area:210,quartos:4,suites:4,vagas:4,andar:22,status:'Pronto',desc:'4 suítes, pé-direito duplo e vista livre permanente para o vale.',demo:true},
+ {id:'alameda-ouro',nome:'Alameda do Ouro',end:'Centro histórico — Nova Lima',lat:-19.9855,lon:-43.8465,preco:920000,area:88,quartos:3,suites:1,vagas:2,andar:6,status:'Pronto',desc:'Charme do centro histórico com acesso rápido ao BH Shopping e à MG-030.',demo:true},
+ {id:'vale-cristais',nome:'Vale dos Cristais Residence',end:'Vale dos Cristais — Nova Lima',lat:-19.9930,lon:-43.9180,preco:4980000,area:340,quartos:4,suites:4,vagas:4,andar:2,status:'Lançamento',desc:'Residência ampla cercada de mata preservada, no condomínio mais exclusivo de Nova Lima.',demo:true},
+ {id:'jd-canada-loft',nome:'Jardim Canadá Loft',end:'Jardim Canadá — Nova Lima',lat:-20.0270,lon:-43.9720,preco:640000,area:65,quartos:1,suites:1,vagas:1,andar:3,status:'Pronto',desc:'Loft industrial no polo criativo do Jardim Canadá, a minutos do Mercado do Jardim.',demo:true},
+ {id:'savassi-360',nome:'Savassi 360°',end:'Pça da Savassi — Belo Horizonte',lat:-19.9372,lon:-43.9333,preco:1280000,area:96,quartos:2,suites:2,vagas:2,andar:15,status:'Em obras',desc:'2 suítes no epicentro da Savassi — gastronomia, cultura e vida urbana na porta.',demo:true}
+];
+let IMOVEIS=[];
+
+/* fotos ilustrativas (SVG procedural — zero dependência externa) */
+function fotoSVG(im,i){
+  const pal=[['#1d3350','#e0a63c','#0d1622'],['#24303d','#9fd8ff','#101a26'],['#33261d','#ffb24d','#140f0a']][i%3];
+  const sil=[];
+  let sr=(im.id.length*7+i*13)%97;
+  const rnd=()=>{sr=(sr*73+41)%97;return sr/97;};
+  for(let b=0;b<7;b++){const w=40+rnd()*60,h=80+rnd()*180,x=20+b*88;sil.push(`<rect x='${x}' y='${360-h-40}' width='${w}' height='${h}' fill='${pal[2]}' opacity='0.9'/>`);
+    for(let j=0;j<5;j++)sil.push(`<rect x='${x+6}' y='${360-h-30+j*30}' width='${w-12}' height='10' fill='${pal[1]}' opacity='${0.12+rnd()*0.25}'/>`);}
+  const lbl=i===0?'Fachada':(i===1?'Living':'Vista aérea');
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='${pal[0]}'/><stop offset='1' stop-color='${pal[2]}'/></linearGradient></defs><rect width='640' height='360' fill='url(#g)'/>${sil.join('')}<rect y='320' width='640' height='40' fill='rgba(0,0,0,.45)'/><text x='16' y='345' font-family='Segoe UI' font-size='17' fill='#fff'>${im.nome} — ${lbl}</text><text x='624' y='345' text-anchor='end' font-family='Segoe UI' font-size='12' fill='#ffffff88'>imagem ilustrativa (demo)</text></svg>`;
+  return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+}
+const fmtBRL=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+
+/* ---------- pins 3D ---------- */
+const pinsGroup=new THREE.Group();scene.add(pinsGroup);
+const GOLD=0xe0a63c;
+const beamMat=new THREE.MeshBasicMaterial({color:GOLD,transparent:true,opacity:0.30,blending:THREE.AdditiveBlending,depthWrite:false});
+const gemMat=new THREE.MeshPhysicalMaterial({color:GOLD,metalness:0.85,roughness:0.22,clearcoat:1,clearcoatRoughness:0.15,emissive:GOLD,emissiveIntensity:0.45});
+const ringMat=new THREE.MeshBasicMaterial({color:GOLD,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+const beamGeo=new THREE.CylinderGeometry(1.6,2.6,60,10,1,true);
+const gemGeo=new THREE.OctahedronGeometry(8);
+const ringGeo=new THREE.RingGeometry(10,14,40);
+
+function labelSprite(im){
+  const cv=document.createElement('canvas');cv.width=512;cv.height=132;
+  const g=cv.getContext('2d');
+  g.fillStyle='rgba(12,18,26,.88)';
+  const r=26,w=500,h=120,x=6,y=6;
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fill();
+  g.strokeStyle='#e0a63c';g.lineWidth=3;g.stroke();
+  g.fillStyle='#fff';g.font='600 40px Segoe UI, sans-serif';
+  g.fillText(im.nome.length>24?im.nome.slice(0,23)+'…':im.nome,28,58);
+  g.fillStyle='#e0a63c';g.font='700 36px Segoe UI, sans-serif';
+  g.fillText(fmtBRL(im.preco),28,104);
+  const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+  sp.renderOrder=5;
+  return sp;
+}
+function buildPins(){
+  while(pinsGroup.children.length)pinsGroup.remove(pinsGroup.children[0]);
+  IMOVEIS.forEach(im=>{
+    const g=new THREE.Group();
+    const beam=new THREE.Mesh(beamGeo,beamMat);beam.position.y=30;
+    const gem=new THREE.Mesh(gemGeo,gemMat);gem.position.y=64;
+    const ring=new THREE.Mesh(ringGeo,ringMat);ring.rotation.x=-Math.PI/2;ring.position.y=1.2;
+    const sp=labelSprite(im);sp.position.y=92;
+    g.add(beam,gem,ring,sp);
+    g.userData={im,gem,ring,sp,grounded:false,phase:Math.random()*6.28};
+    pinsGroup.add(g);
+    placePin(g);
+  });
+}
+const _pv=new THREE.Vector3();
+function placePin(g){
+  const im=g.userData.im;
+  llToScene(im.lat,im.lon,1500,_pv);
+  const gy=groundAt(_pv.x,_pv.z,groundY+2500);
+  g.position.set(_pv.x,gy!=null?gy:groundY,_pv.z);
+  g.userData.grounded=gy!=null;
+}
+onRecenter.push(()=>{pinsGroup.children.forEach(g=>{g.userData.grounded=false;placePin(g);});});
+
+/* clique nos pins */
+pinPick=rc=>{
+  const h=rc.intersectObject(pinsGroup,true);
+  if(!h.length)return false;
+  let o=h[0].object;while(o&&!o.userData.im)o=o.parent;
+  if(o&&o.userData.im){openImovel(o.userData.im,true);return true;}
+  return false;
+};
+
+/* ---------- ficha do imóvel ---------- */
+let cardIm=null;
+function openCard(im){
+  cardIm=im;
+  const fotos=[0,1,2].map(i=>im.fotos&&im.fotos[i]?im.fotos[i]:(window._gkey?('https://maps.googleapis.com/maps/api/streetview?size=640x360&location='+im.lat+','+im.lon+'&fov=90&heading='+(i*120)+'&return_error_code=true&key='+window._gkey):fotoSVG(im,i)));
+  $('card').innerHTML=
+   `<div style="position:relative"><img class="ph" id="cph" src="${fotos[0]}">`+
+   `<span class="tag">${im.status||'Disponível'}${im.demo?' · DEMO':''}</span>`+
+   `<button class="fx" id="cclose">×</button></div>`+
+   `<div class="thumbs">${fotos.map((f,i)=>`<img src="${f}" data-i="${i}" class="${i===0?'on':''}">`).join('')}</div>`+
+   `<div class="body"><h2>${im.nome}</h2><div class="end">${im.end||''}</div>`+
+   `<div class="preco">${fmtBRL(im.preco)}</div>`+
+   `<div class="specs"><span class="sp">${im.area} m²</span><span class="sp">${im.quartos} quartos</span><span class="sp">${im.suites} suítes</span><span class="sp">${im.vagas} vagas</span>${im.andar?`<span class="sp">${im.andar}º andar</span>`:''}</div>`+
+   `<p class="desc">${im.desc||''}</p><div id="wsScore" class="end"></div><div id="solarInfo" class="end"></div><div id="nearRes"></div>`+
+   `<div class="ctas">`+
+   `<button id="centrar">Entrar no imóvel (1ª pessoa)</button>`+
+   `<button class="ghost" id="cvoar">Voar até aqui</button>`+
+   `<button class="ghost" id="cperto">O que há por perto (Places)</button>`+
+   `<button class="ghost" id="ccomp">Comparar 3D lado a lado</button>`+
+   `<button class="ghost" id="cobra">Fases da obra (digital twin)</button>`+
+   `<button class="ghost" id="ccorretor">Falar com corretor</button>`+
+   (im.url?`<button class="ghost" id="csite">Ver no site White Stone</button>`:'')+
+   `</div></div>`;
+  $('card').classList.remove('hide');
+  $('cclose').onclick=()=>{$('card').classList.add('hide');cardIm=null;};
+  $('card').querySelectorAll('.thumbs img').forEach(t=>{
+    t.onclick=()=>{$('cph').src=t.src;$('card').querySelectorAll('.thumbs img').forEach(x=>x.classList.remove('on'));t.classList.add('on');};
+  });
+  $('card').querySelectorAll('img').forEach((g,idx)=>{g.onerror=()=>{g.onerror=null;g.src=fotoSVG(im,idx%3);};});
+  $('cperto').onclick=()=>nearby(im,$('nearRes'));
+  $('ccomp').onclick=()=>openCompare(im);
+  $('cobra').onclick=()=>toggleObra(im);
+  wsScore(im,$('wsScore'));
+  solarInfo(im,$('solarInfo'));
+  $('centrar').onclick=()=>enterInterior(im);
+  $('cvoar').onclick=()=>flyToImovel(im);
+  $('ccorretor').onclick=()=>{
+    const msg=encodeURIComponent('Olá! Tenho interesse no '+im.nome+' ('+fmtBRL(im.preco)+'). Vi na plataforma 3D White Stone.');
+    open((im.whatsapp?'https://wa.me/'+im.whatsapp:'https://wa.me/5531990000000')+'?text='+msg,'_blank');
+  };
+  if(im.url){const b=$('csite');if(b)b.onclick=()=>open(im.url,'_blank');}
+}
+
+/* ---------- voo cinematográfico até o imóvel ---------- */
+function pinOf(im){return pinsGroup.children.find(g=>g.userData.im===im);}
+function flyToImovel(im,keepCard,tries){
+  const near=Math.abs(im.lat-state.lat)<0.05&&Math.abs(im.lon-state.lon)<0.05;
+  if(!near){flyTo(im.lat,im.lon,700,im.nome);setTimeout(()=>flyToImovel(im,keepCard,0),1600);return;}
+  const g=pinOf(im);if(!g)return;
+  if(!g.userData.grounded)placePin(g);
+  if(!g.userData.grounded){ // terreno daquele ponto ainda não carregou: espera para NUNCA afundar
+    tries=(tries||0)+1;
+    if(tries<24){if(tries===1)toast('Posicionando sobre o terreno real…');setTimeout(()=>flyToImovel(im,keepCard,tries),420);return;}
+  }
+  const base=g.position.clone();
+  const tgt=base.clone();tgt.y+=40;
+  const az=Math.random()*6.28;
+  const pos=base.clone().add(new THREE.Vector3(Math.sin(az)*150,130,Math.cos(az)*150));
+  const gyP=groundAt(pos.x,pos.z,base.y+900);
+  if(gyP!=null&&pos.y<gyP+60)pos.y=gyP+60;
+  /* também protege o ponto médio do arco (onde a câmera mergulhava) */
+  const midXZ=base.clone().lerp(pos,0.5);
+  const gyM=groundAt(midXZ.x,midXZ.z,base.y+900);
+  if(gyM!=null) pos.y=Math.max(pos.y,gyM+55);
+  tweenCam(pos,tgt,3.4,()=>{
+    placePin(g);
+    const gy2=groundAt(camera.position.x,camera.position.z,camera.position.y+1500);
+    if(gy2!=null&&camera.position.y<gy2+6){const d=gy2+6-camera.position.y;camera.position.y+=d;controls.target.y+=Math.max(0,d-25);}
+    if(g.userData.grounded&&controls.target.y<g.position.y+8)controls.target.y=g.position.y+8;
+    toast(im.nome+' — arraste para orbitar o empreendimento');
+  });
+  $('place').textContent=im.nome;
+  $('coord').textContent=im.lat.toFixed(4)+', '+im.lon.toFixed(4);
+}
+function openImovel(im,fly){openCard(im);if(fly)flyToImovel(im,true);}
+
+/* ---------- lista ---------- */
+function buildList(){
+  $('imItems').innerHTML='';
+  IMOVEIS.forEach(im=>{
+    const d=document.createElement('div');d.className='imi';
+    d.innerHTML=`<img src="${im.fotos&&im.fotos[0]?im.fotos[0]:fotoSVG(im,0)}"><div class="t"><div class="n">${im.nome}</div><div class="p">${fmtBRL(im.preco)}</div><div class="b">${im.area} m² · ${im.quartos}q · ${im.vagas} vagas</div></div>`;
+    d.onclick=()=>openImovel(im,true);
+    $('imItems').appendChild(d);
+  });
+}
+$('imBtn').onclick=()=>$('imList').classList.toggle('hide');
+
+/* carregar ws-imoveis.json (dados reais substituem a demo) */
+async function loadImoveis(){
+  try{
+    const r=await fetch('./ws-imoveis.json',{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(Array.isArray(j)&&j.length){IMOVEIS=j;}}
+  }catch(e){}
+  if(!IMOVEIS.length)IMOVEIS=DEMO_IMOVEIS;
+  buildPins();buildList();
+}
+
+/* animação dos pins + re-snap de solo enquanto tiles carregam */
+let pinAcc=0;
+hooks.push((dt,t)=>{
+  pinAcc+=dt;
+  const doGround=pinAcc>2;if(doGround)pinAcc=0;
+  for(const g of pinsGroup.children){
+    const u=g.userData;
+    u.gem.position.y=64+Math.sin(t*1.6+u.phase)*4;
+    u.gem.rotation.y=t*0.8+u.phase;
+    const pk=(t*0.7+u.phase)%1;
+    u.ring.scale.setScalar(1+pk*1.8);
+    u.ring.material=ringMat;ringMat.opacity=0.5;
+    const d=camera.position.distanceTo(g.position);
+    const s=THREE.MathUtils.clamp(d*0.055,14,340);
+    u.sp.scale.set(s*4.2,s*1.08,1);
+    u.sp.position.y=92+Math.max(0,(s-30))*0.6;
+    g.visible=state.mode!=='interior'&&d<26000;
+    if(doGround&&!u.grounded)placePin(g);
+  }
+});
+/* ============================================================
+   ONDA 3 — Interior navegável em 1ª pessoa (estilo jogo)
+   apartamento paramétrico 140 m² · colisão · sol real · vista real
+   ============================================================ */
+let interior=null,intIm=null,intFloorY=0,intOrigin=new THREE.Vector3();
+let bobT=0,dollOn=false,dollPrev=null;
+const IH=2.8,WT=0.14;
+
+function fadeTo(v,then){const f=$('fade');f.style.opacity=v;if(then)setTimeout(then,580);}
+
+/* texturas procedurais */
+function woodTex(){
+  const cv=document.createElement('canvas');cv.width=256;cv.height=256;
+  const g=cv.getContext('2d');
+  g.fillStyle='#8a6a48';g.fillRect(0,0,256,256);
+  for(let i=0;i<9;i++){
+    g.fillStyle=`rgba(${96+Math.random()*30|0},${66+Math.random()*22|0},${40+Math.random()*16|0},0.9)`;
+    g.fillRect(0,i*29,256,27);
+    g.fillStyle='rgba(0,0,0,.18)';g.fillRect(0,i*29+27,256,2);
+  }
+  for(let i=0;i<380;i++){g.fillStyle=`rgba(60,40,22,${Math.random()*0.12})`;g.fillRect(Math.random()*256,Math.random()*256,2+Math.random()*14,1);}
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(7,5);return t;
+}
+
+/* ================================================================
+   PONTE WS STUDIO → MUNDO
+   Constrói o interior a partir de um WS Space Model, respeitando o
+   MESMO contrato de userData que o interior nativo (colliders, doors,
+   furnList, sun, hemi, nightLights, ceils) — o resto do Mundo não muda.
+   ================================================================ */
+function spaceModelDoImovel(im){
+  try{
+    const raw=localStorage.getItem('ws_space_'+im.id) || localStorage.getItem('ws_space_atual');
+    if(!raw) return null;
+    const sm=JSON.parse(raw);
+    if(!sm || !Array.isArray(sm.pavimentos) || !sm.pavimentos.length) return null;
+    return sm;
+  }catch(e){ return null; }
+}
+function buildInteriorSM(im, sm){
+  const G=new THREE.Group();
+  const mats={
+    wall:new THREE.MeshStandardMaterial({color:0xf2efe9,roughness:0.95}),
+    wall2:new THREE.MeshStandardMaterial({color:0xe4ddd2,roughness:0.95}),
+    ceil:new THREE.MeshStandardMaterial({color:0xfaf8f4,roughness:0.98}),
+    glass:new THREE.MeshPhysicalMaterial({color:0xcfe8f5,transparent:true,opacity:0.15,roughness:0.06,side:THREE.DoubleSide,depthWrite:false}),
+    wood2:new THREE.MeshStandardMaterial({color:0x6b4f34,roughness:0.7}),
+    fabric:new THREE.MeshStandardMaterial({color:0x9a9384,roughness:0.98}),
+    fabric2:new THREE.MeshStandardMaterial({color:0xcabb9f,roughness:0.98}),
+    white:new THREE.MeshStandardMaterial({color:0xf5f5f2,roughness:0.6}),
+    dark:new THREE.MeshStandardMaterial({color:0x232f3a,roughness:0.4,metalness:0.5}),
+    counter:new THREE.MeshPhysicalMaterial({color:0x2e3338,roughness:0.18,clearcoat:0.8}),
+    green:new THREE.MeshStandardMaterial({color:0x3f7a3a,roughness:0.9}),
+    tv:new THREE.MeshStandardMaterial({color:0x05070a,roughness:0.3,emissive:0x0a1420,emissiveIntensity:0.4}),
+    base:new THREE.MeshStandardMaterial({color:0xf2eee4,roughness:0.7})
+  };
+  const PISOCOR={ madeira_carvalho:0xA9825A, madeira_ipe:0x5C4530, laminado_freijo:0xC29A6B,
+    marmore_carrara:0xEDEBE6, marmore_calacatta:0xF0EDE5, granito_branco:0xDEDBD2,
+    granito_preto:0x1C1D1F, porcelanato_bege:0xD8CDBB, porcelanato_cinza:0xB9B7B2,
+    cimento_queimado:0x9A9791, ardosia:0x4A4C4E };
+  const colliders=[],furnCols=[],furnList=[],doors=[],ceils=[];
+
+  /* centraliza o modelo na origem local (o Mundo posiciona o grupo) */
+  let x0=1e9,z0=1e9,x1=-1e9,z1=-1e9;
+  for(const f of sm.pavimentos) for(const w of f.paredes) for(const p of [w.a,w.b]){
+    x0=Math.min(x0,p[0]); z0=Math.min(z0,p[1]); x1=Math.max(x1,p[0]); z1=Math.max(z1,p[1]);
+  }
+  if(x0>1e8){ return null; }
+  const ox=(x0+x1)/2, oz=(z0+z1)/2;
+  const TX=v=>v-ox, TZ=v=>v-oz;
+  const SLAB=0.12;
+  const levelY=[]; { let y=0; for(const f of sm.pavimentos){ levelY.push(y); y+=(f.pe_direito||2.7)+SLAB; } }
+
+  const addBox=(w,h,d,x,y,z,mat,collide,rotY)=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z); if(rotY) m.rotation.y=rotY;
+    m.castShadow=true; m.receiveShadow=true; G.add(m);
+    if(collide && y-h/2<1.6){
+      const r=Math.max(w,d)/2;
+      colliders.push(new THREE.Box3(new THREE.Vector3(x-r-0.02,y-h/2,z-r-0.02),
+                                    new THREE.Vector3(x+r+0.02,y+h/2,z+r+0.02)));
+    }
+    return m;
+  };
+
+  sm.pavimentos.forEach((f,k)=>{
+    const H=f.pe_direito||2.7, yB=levelY[k];
+    const vaosDe=id=>(f.vaos||[]).filter(v=>v.parede===id);
+
+    /* --- paredes com vãos (mesmo algoritmo do Studio: blocos, sem CSG) --- */
+    for(const w of f.paredes){
+      const ax=TX(w.a[0]), az=TZ(w.a[1]), bx=TX(w.b[0]), bz=TZ(w.b[1]);
+      const dx=bx-ax, dz=bz-az, len=Math.hypot(dx,dz);
+      if(len<0.02) continue;
+      const ang=Math.atan2(dz,dx), ux=dx/len, uz=dz/len;
+      const esp=w.espessura||0.15;
+      const list=vaosDe(w.id).slice().sort((a,b)=>a.x-b.x);
+      const blocos=[]; let cur=0;
+      for(const v of list){
+        const a0=Math.max(0,Math.min(v.x,len)), a1=Math.max(0,Math.min(v.x+v.largura,len));
+        if(a0>cur+0.005) blocos.push([cur,a0,0,H]);
+        const top=Math.min(H,(v.peitoril||0)+v.altura);
+        if((v.peitoril||0)>0.01) blocos.push([a0,a1,0,v.peitoril]);
+        if(top<H-0.01) blocos.push([a0,a1,top,H]);
+        cur=Math.max(cur,a1);
+      }
+      if(cur<len-0.005) blocos.push([cur,len,0,H]);
+      for(const [p0,p1,y0,y1] of blocos){
+        const bw=p1-p0, bh=y1-y0;
+        if(bw<0.01||bh<0.01) continue;
+        const cx=ax+ux*(p0+bw/2), cz=az+uz*(p0+bw/2);
+        const m=addBox(bw,bh,esp,cx,yB+y0+bh/2,cz,mats.wall,false,-ang);
+        if(y0<1.6){
+          const r=Math.max(bw*Math.abs(ux),esp)/2, r2=Math.max(bw*Math.abs(uz),esp)/2;
+          colliders.push(new THREE.Box3(
+            new THREE.Vector3(cx-r-0.02, yB+y0, cz-r2-0.02),
+            new THREE.Vector3(cx+r+0.02, yB+y1, cz+r2+0.02)));
+        }
+        if(y0===0 && bh>0.3) addBox(bw,0.08,esp+0.02,cx,yB+0.04,cz,mats.base,false,-ang);
+      }
+      /* vidros e portas interativas (contrato do Mundo: piv/open/t/a0/a1/hx/hz/cbox) */
+      for(const v of vaosDe(w.id)){
+        const meio=v.x+v.largura/2;
+        const cx=ax+ux*meio, cz=az+uz*meio;
+        const yc=yB+(v.peitoril||0)+v.altura/2;
+        if(v.tipo==='janela'){
+          const g=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.05,v.largura-0.1),Math.max(0.05,v.altura-0.08),0.02),mats.glass);
+          g.position.set(cx,yc,cz); g.rotation.y=-ang; G.add(g);
+        } else if((v.estilo||'giro')!=='portal'){
+          const hx=ax+ux*(v.x+0.03), hz=az+uz*(v.x+0.03);
+          const lw=v.largura-0.07;
+          const dm=new THREE.Mesh(new THREE.BoxGeometry(lw,v.altura-0.04,0.05),mats.wood2);
+          dm.geometry.translate(lw/2,(v.altura-0.04)/2+0.02,0);
+          dm.castShadow=true;
+          const piv=new THREE.Group();
+          piv.position.set(hx,yB,hz); piv.rotation.y=-ang; piv.add(dm); G.add(piv);
+          const cbox=new THREE.Box3(
+            new THREE.Vector3(Math.min(hx,hx+ux*lw)-0.1, yB, Math.min(hz,hz+uz*lw)-0.1),
+            new THREE.Vector3(Math.max(hx,hx+ux*lw)+0.1, yB+v.altura, Math.max(hz,hz+uz*lw)+0.1));
+          doors.push({piv,open:true,t:1,a0:-ang,a1:-ang-1.5,hx,hz,cbox});
+        }
+      }
+    }
+
+    /* --- pisos e tetos --- */
+    for(const r of (f.comodos||[])){
+      if(!r.poligono || r.poligono.length<3) continue;
+      const sh=new THREE.Shape(r.poligono.map(p=>new THREE.Vector2(TX(p[0]),-TZ(p[1]))));
+      const gp=new THREE.ShapeGeometry(sh); gp.rotateX(-Math.PI/2);
+      const pm=new THREE.MeshStandardMaterial({ color:PISOCOR[r.piso]||0xD8CDBB, roughness:0.5, metalness:0.04 });
+      const piso=new THREE.Mesh(gp,pm); piso.position.y=yB+0.005; piso.receiveShadow=true; G.add(piso);
+      const gc=new THREE.ShapeGeometry(sh); gc.rotateX(Math.PI/2);
+      const teto=new THREE.Mesh(gc,mats.ceil); teto.position.y=yB+H; G.add(teto); ceils.push(teto);
+    }
+
+    /* --- mobília (volumes proporcionais; o GLB real entra na fase seguinte) --- */
+    const MOB={ sofa_capitone:[2.0,0.75,1.15,'fabric'], sofa_wm:[2.14,0.8,1.1,'fabric'],
+      sofa_3l:[2.1,0.75,0.92,'fabric'], poltrona:[0.85,0.8,0.85,'fabric2'],
+      cama_casal:[1.6,0.55,2.0,'white'], cama_solteiro:[0.9,0.5,1.9,'white'],
+      armario:[1.8,2.1,0.6,'wood2'], estante:[1.6,2.0,0.35,'wood2'],
+      mesa_jantar_6:[2.2,0.76,1.0,'wood2'], mesa_4:[1.2,0.75,1.2,'wood2'],
+      bancada:[1.8,0.9,0.65,'counter'], geladeira:[0.7,1.85,0.68,'dark'],
+      fogao:[0.6,0.9,0.6,'white'], escrivaninha:[1.4,0.75,0.6,'wood2'],
+      tv_rack:[1.6,0.45,0.42,'wood2'], banheiro_set:[1.4,0.8,0.7,'white'],
+      box_chuveiro:[0.9,2.0,0.9,'glass'], tapete:[2.0,0.02,1.4,'fabric2'],
+      planta_vaso:[0.5,1.1,0.5,'green'], luminaria:[0.4,1.6,0.4,'white'],
+      piscina:[3.2,0.35,2.2,'glass'] };
+    for(const m of (f.mobilia||[])){
+      const d=MOB[m.sku]; if(!d) continue;
+      const [w2,h2,d2,mk]=d;
+      const mm=new THREE.Mesh(new THREE.BoxGeometry(w2,h2,d2), mats[mk]||mats.fabric);
+      mm.position.set(TX(m.pos[0]), yB+h2/2+0.01, TZ(m.pos[1]));
+      mm.rotation.y=-(m.rot||0)*Math.PI/180;
+      mm.castShadow=true; mm.receiveShadow=true;
+      G.add(mm); furnList.push(mm);
+      if(h2>0.15) furnCols.push(new THREE.Box3(
+        new THREE.Vector3(TX(m.pos[0])-Math.max(w2,d2)/2, yB, TZ(m.pos[1])-Math.max(w2,d2)/2),
+        new THREE.Vector3(TX(m.pos[0])+Math.max(w2,d2)/2, yB+h2, TZ(m.pos[1])+Math.max(w2,d2)/2)));
+    }
+    /* --- escadas --- */
+    for(const e of (f.escadas||[])){
+      const rise=H+SLAB, n=Math.max(8,Math.round(rise/0.185));
+      const sh2=rise/n, sd=2.8/n;
+      const sg=new THREE.Group();
+      sg.position.set(TX(e.pos[0]), yB, TZ(e.pos[1]));
+      sg.rotation.y=-(e.rot||0)*Math.PI/180;
+      for(let i=0;i<n;i++){
+        const st=new THREE.Mesh(new THREE.BoxGeometry(1.0, sh2*(i+1), sd), mats.wood2);
+        st.position.set(0,(sh2*(i+1))/2, 1.4 - sd*(i+0.5));
+        st.castShadow=true; st.receiveShadow=true; sg.add(st);
+      }
+      G.add(sg);
+    }
+  });
+
+  /* luzes — mesmo contrato do interior nativo */
+  const hemi=new THREE.HemisphereLight(0xdfeaf5,0x2a2620,0.55); G.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff2dd,3.0);
+  sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+  const ext=Math.max(12,(x1-x0)/2+4);
+  sun.shadow.camera.left=-ext; sun.shadow.camera.right=ext;
+  sun.shadow.camera.top=ext; sun.shadow.camera.bottom=-ext;
+  sun.shadow.camera.near=1; sun.shadow.camera.far=90;
+  sun.shadow.bias=-0.0004; sun.shadow.radius=3;
+  G.add(sun); G.add(sun.target);
+  const nightLights=[];
+  for(const f of sm.pavimentos) for(const r of (f.comodos||[])){
+    if(!r.poligono||r.poligono.length<3) continue;
+    let cx2=0,cz2=0; for(const p of r.poligono){cx2+=TX(p[0]);cz2+=TZ(p[1]);}
+    cx2/=r.poligono.length; cz2/=r.poligono.length;
+    const pl=new THREE.PointLight(0xffd9a0,0,9,2);
+    pl.position.set(cx2,(f.pe_direito||2.7)-0.2,cz2); G.add(pl); nightLights.push(pl);
+  }
+  G.userData={colliders,furnCols,furnList,sun,hemi,nightLights,mats,ceils,doors,
+    bounds:{ x:[-(x1-x0)/2-0.4,(x1-x0)/2+0.4], z:[-(z1-z0)/2-0.4,(z1-z0)/2+0.4] },
+    origem:'space-model', nome:sm.nome||im.nome };
+  return G;
+}
+
+function buildInterior(im){
+  const G=new THREE.Group();
+  const mats={
+    wall:new THREE.MeshStandardMaterial({color:0xf2efe9,roughness:0.95}),
+    wall2:new THREE.MeshStandardMaterial({color:0xe4ddd2,roughness:0.95}),
+    floor:new THREE.MeshStandardMaterial({map:woodTex(),roughness:0.55,metalness:0.05}),
+    ceil:new THREE.MeshStandardMaterial({color:0xfaf8f4,roughness:0.98}),
+    glass:new THREE.MeshPhysicalMaterial({color:0xcfe8f5,transparent:true,opacity:0.15,roughness:0.06,metalness:0,side:THREE.DoubleSide,depthWrite:false}),
+    dark:new THREE.MeshStandardMaterial({color:0x232f3a,roughness:0.4,metalness:0.5}),
+    fabric:new THREE.MeshStandardMaterial({color:0x7a8894,roughness:0.98}),
+    fabric2:new THREE.MeshStandardMaterial({color:0xcabb9f,roughness:0.98}),
+    wood2:new THREE.MeshStandardMaterial({color:0x6b4f34,roughness:0.7}),
+    white:new THREE.MeshStandardMaterial({color:0xf5f5f2,roughness:0.6}),
+    green:new THREE.MeshStandardMaterial({color:0x3f7a3a,roughness:0.9}),
+    counter:new THREE.MeshPhysicalMaterial({color:0x2e3338,roughness:0.18,clearcoat:0.8}),
+    tv:new THREE.MeshStandardMaterial({color:0x05070a,roughness:0.3,emissive:0x0a1420,emissiveIntensity:0.4})
+  };
+  const colliders=[],furnCols=[],furnList=[];let furnMode=false; // Box3 em coords locais
+  function solid(w,h,d,x,y,z,mat,collide){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+    m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;G.add(m);
+    if(furnMode)furnList.push(m);
+    if(collide!==false&&y-h/2<1.55)(furnMode?furnCols:colliders).push(new THREE.Box3(
+      new THREE.Vector3(x-w/2-0.02,y-h/2,z-d/2-0.02),new THREE.Vector3(x+w/2+0.02,y+h/2,z+d/2+0.02)));
+    return m;
+  }
+  /* parede com aberturas: a/b medidos ao longo do vão a partir de (x1,z1) */
+  function wall(x1,z1,x2,z2,opens,mat){
+    mat=mat||mats.wall;
+    const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),ux=dx/len,uz=dz/len;
+    opens=(opens||[]).slice().sort((p,q)=>p.a-q.a);
+    const horiz=Math.abs(dz)<0.001;
+    function piece(a0,a1,y0,y1){
+      if(a1-a0<0.01||y1-y0<0.01)return;
+      const cx=x1+ux*(a0+a1)/2,cz=z1+uz*(a0+a1)/2;
+      solid(horiz?(a1-a0):WT,y1-y0,horiz?WT:(a1-a0),cx,(y0+y1)/2,cz,mat,y0<1.55);
+    }
+    let cur=0;
+    for(const o of opens){
+      piece(cur,o.a,0,IH);
+      if(o.sill>0.01)piece(o.a,o.b,0,o.sill);
+      if(o.head<IH-0.01)piece(o.a,o.b,o.head,IH);
+      if(o.glass){
+        const gm=new THREE.Mesh(new THREE.BoxGeometry(horiz?(o.b-o.a):0.04,o.head-o.sill,horiz?0.04:(o.b-o.a)),mats.glass);
+        gm.position.set(x1+ux*(o.a+o.b)/2,(o.sill+o.head)/2,z1+uz*(o.a+o.b)/2);
+        G.add(gm);
+        if(o.solidGlass)colliders.push(new THREE.Box3().setFromObject(gm).expandByScalar(0.02));
+      }
+      cur=o.b;
+    }
+    piece(cur,len,0,IH);
+  }
+  /* piso + teto */
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(14.3,0.24,10.3),mats.floor);
+  slab.position.set(0,-0.12,0);slab.receiveShadow=true;G.add(slab);
+  const slabV=new THREE.Mesh(new THREE.BoxGeometry(6.3,0.24,2.4),mats.floor);
+  slabV.position.set(-4,-0.12,-6.1);slabV.receiveShadow=true;G.add(slabV);
+  const ceil=new THREE.Mesh(new THREE.BoxGeometry(14.3,0.2,10.3),mats.ceil);
+  ceil.position.set(0,IH+0.1,0);G.add(ceil);
+  const ceilV=new THREE.Mesh(new THREE.BoxGeometry(6.3,0.2,2.4),mats.ceil);
+  ceilV.position.set(-4,IH+0.1,-6.1);G.add(ceilV);
+
+  /* ---- paredes externas ---- */
+  wall(-7,5,7,5,[{a:6.55,b:7.45,sill:0,head:2.1}]);                                    // sul + porta entrada
+  wall(-7,-5,-1,-5,[{a:0.5,b:5.5,sill:0,head:2.45}]);                                   // sala→varanda (vão livre)
+  const gv=new THREE.Mesh(new THREE.BoxGeometry(2.3,2.45,0.04),mats.glass);             // meia folha de vidro "aberta"
+  gv.position.set(-5.35,1.225,-5);G.add(gv);
+  colliders.push(new THREE.Box3(new THREE.Vector3(-6.55,0,-5.08),new THREE.Vector3(-4.2,2.45,-4.92)));
+  wall(-1,-5,3,-5,[{a:0.6,b:3.4,sill:1.0,head:2.3,glass:true}]);                        // cozinha
+  wall(3,-5,7,-5,[{a:0.8,b:3.4,sill:0.9,head:2.35,glass:true}]);                        // master norte
+  wall(-7,-5,-7,5,[{a:1.5,b:4,sill:0.9,head:2.3,glass:true},{a:6.5,b:9,sill:0.9,head:2.3,glass:true}]);   // oeste
+  wall(7,-5,7,5,[{a:1,b:3.4,sill:0.9,head:2.35,glass:true},{a:4.8,b:5.8,sill:1.4,head:2.2,glass:true},{a:7.2,b:9.4,sill:0.9,head:2.3,glass:true}]); // leste
+  /* ---- paredes internas ---- */
+  wall(-1,-1.8,-1,5,[{a:0,b:1.2,sill:0,head:2.45},{a:2.4,b:3.3,sill:0,head:2.1},{a:5.1,b:6.0,sill:0,head:2.1}],mats.wall2); // corredor oeste
+  wall(-3.4,0,-3.4,5,[{a:1,b:1.9,sill:0,head:2.1}],mats.wall2);                         // suíte 3
+  wall(-7,0,-3.4,0,null,mats.wall2);                                                    // sala/suíte 3
+  wall(-3.4,2.6,-1,2.6,null,mats.wall2);                                                // hall/banho social
+  wall(0.1,-1.8,3,-1.8,null,mats.wall2);                                                // cozinha sul
+  wall(3,-5,3,-0.8,[{a:3.4,b:4.2,sill:0,head:2.1}],mats.wall2);                         // master oeste + porta
+  wall(1,-0.8,7,-0.8,[{a:4.4,b:5.2,sill:0,head:2.1}],mats.wall2);                       // master norte interno + porta banho
+  wall(5,-0.8,5,1.6,null,mats.wall2);                                                   // banho master oeste
+  wall(1,1.6,7,1.6,[{a:1,b:1.9,sill:0,head:2.1}],mats.wall2);                           // suíte 2 sul + porta
+  wall(1,1.6,1,5,null,mats.wall2);                                                      // suíte 2 oeste
+  /* ---- varanda: guarda-corpo de vidro ---- */
+  [[-7,-7.2,-1,-7.2],[-7,-7.2,-7,-5],[-1,-7.2,-1,-5]].forEach(s=>{
+    const dx=s[2]-s[0],dz=s[3]-s[1],len=Math.hypot(dx,dz);
+    const r=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(dz)<0.001?len:0.05,1.12,Math.abs(dz)<0.001?0.05:len),mats.glass);
+    r.position.set((s[0]+s[2])/2,0.56,(s[1]+s[3])/2);G.add(r);
+    colliders.push(new THREE.Box3(
+      new THREE.Vector3(Math.min(s[0],s[2])-0.06,0,Math.min(s[1],s[3])-0.06),
+      new THREE.Vector3(Math.max(s[0],s[2])+0.06,1.6,Math.max(s[1],s[3])+0.06)));
+    const cor=new THREE.Mesh(new THREE.BoxGeometry(Math.abs(dz)<0.001?len:0.07,0.06,Math.abs(dz)<0.001?0.07:len),mats.dark);
+    cor.position.set((s[0]+s[2])/2,1.14,(s[1]+s[3])/2);G.add(cor);
+  });
+
+  /* ---- portas interativas (tecla E) ---- */
+  const doors=[];
+  function mkDoor(hx,hz,ry0,w){
+    const dm=new THREE.Mesh(new THREE.BoxGeometry(w,2.06,0.06),mats.wood2);
+    dm.geometry.translate(w/2,1.03,0);dm.castShadow=true;
+    const piv=new THREE.Group();piv.position.set(hx,0,hz);piv.rotation.y=ry0;piv.add(dm);G.add(piv);
+    const ddx=Math.cos(ry0),ddz=-Math.sin(ry0);
+    const cbox=new THREE.Box3(
+      new THREE.Vector3(Math.min(hx,hx+ddx*w)-0.1,0,Math.min(hz,hz+ddz*w)-0.1),
+      new THREE.Vector3(Math.max(hx,hx+ddx*w)+0.1,2.1,Math.max(hz,hz+ddz*w)+0.1));
+    doors.push({piv,open:false,t:0,a0:ry0,a1:ry0-1.5,hx,hz,cbox});
+  }
+  mkDoor(-0.45,5,0,0.9);          // entrada
+  mkDoor(3,-1.6,-Math.PI/2,0.8);  // suíte master
+  mkDoor(5.4,-0.8,0,0.8);         // banho master
+  mkDoor(2,1.6,0,0.9);            // suíte 2
+  mkDoor(-3.4,1,-Math.PI/2,0.9);  // suíte 3
+  mkDoor(-1,3.3,-Math.PI/2,0.9);  // banho social
+  mkDoor(-1,0.6,-Math.PI/2,0.9);  // hall
+
+  furnMode=true;
+  /* ---- mobília ---- */
+  // sala
+  solid(2.7,0.42,0.98,-4.6,0.21,-1.15,mats.fabric);            // sofá base
+  solid(2.7,0.62,0.24,-4.6,0.73,-0.72,mats.fabric);            // encosto
+  solid(0.28,0.5,0.98,-6.06,0.46,-1.15,mats.fabric);           // braço
+  solid(0.28,0.5,0.98,-3.14,0.46,-1.15,mats.fabric);
+  const rug=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.02,2.6),mats.fabric2);
+  rug.position.set(-4.5,0.01,-2.2);rug.receiveShadow=true;G.add(rug);furnList.push(rug);
+  solid(1.05,0.34,0.6,-4.5,0.17,-2.5,mats.wood2);              // mesa centro
+  solid(2.0,2.3,0.1,-4.6,1.15,-0.06,mats.wood2,false);         // painel TV (parede z=0)
+  solid(1.5,0.85,0.05,-4.6,1.35,-0.12,mats.tv,false);          // TV
+  solid(1.7,0.76,0.95,-2.1,0.38,-3.5,mats.wood2);              // mesa jantar
+  for(let i=0;i<6;i++)solid(0.42,0.88,0.42,-2.9+(i%3)*0.8,0.44,-3.5+(i<3?-0.75:0.75),mats.fabric2);
+  const vaso=new THREE.Mesh(new THREE.ConeGeometry(0.42,1.5,8),mats.green);
+  vaso.position.set(-6.5,0.9,-4.4);vaso.castShadow=true;G.add(vaso);furnList.push(vaso);
+  furnCols.push(new THREE.Box3(new THREE.Vector3(-6.9,0,-4.8),new THREE.Vector3(-6.1,1.7,-4.0)));
+  // cozinha
+  solid(3.6,0.92,0.62,0.95,0.46,-4.62,mats.counter);           // bancada norte
+  solid(3.6,0.7,0.35,0.95,1.92,-4.76,mats.white,false);        // armários altos
+  solid(2.0,0.92,0.62,1.0,0.46,-2.6,mats.counter);             // ilha
+  solid(0.72,1.9,0.7,2.55,0.95,-4.5,mats.dark);                // geladeira
+  // master
+  solid(1.93,0.5,2.03,5.0,0.3,-3.1,mats.white);                // cama king
+  solid(1.93,0.35,0.16,5.0,0.85,-4.05,mats.fabric2);           // cabeceira
+  solid(0.5,0.45,0.45,3.85,0.22,-4.1,mats.wood2);              // criado 1
+  solid(0.5,0.45,0.45,6.15,0.22,-4.1,mats.wood2);              // criado 2
+  // suíte 2
+  solid(1.58,0.5,1.98,3.6,0.3,3.6,mats.white);
+  solid(1.2,0.74,0.55,6.2,0.37,2.3,mats.wood2);                // escrivaninha
+  // suíte 3 / office
+  solid(1.6,0.74,0.7,-5.8,0.37,1.0,mats.wood2);
+  solid(0.9,1.9,0.32,-3.75,0.95,4.6,mats.wood2);               // estante
+  solid(1.7,0.42,0.9,-6.0,0.21,4.2,mats.fabric);               // sofá-cama
+  // banhos
+  solid(1.6,0.86,0.5,-2.2,0.43,4.6,mats.counter);              // bancada banho social
+  solid(1.6,0.86,0.5,6.0,0.43,1.2,mats.counter);               // bancada banho master
+  // varanda
+  solid(0.7,0.72,0.7,-2.0,0.36,-6.1,mats.wood2);               // bistrô
+  solid(0.4,0.8,0.4,-2.9,0.4,-6.2,mats.dark);
+  solid(0.4,0.8,0.4,-1.2,0.4,-6.2,mats.dark);
+  const v2=new THREE.Mesh(new THREE.ConeGeometry(0.4,1.3,8),mats.green);
+  v2.position.set(-6.5,0.8,-6.3);v2.castShadow=true;G.add(v2);furnList.push(v2);
+  solid(1.1,1.2,0.6,-1.4,0.6,-5.4,mats.dark);                  // churrasqueira
+  // quadros de arte + cortinas (realismo)
+  const art=(x,z,ry,w,h,c1,c2)=>{
+    const cv=document.createElement('canvas');cv.width=128;cv.height=96;
+    const g2=cv.getContext('2d');
+    const gr=g2.createLinearGradient(0,0,128,96);gr.addColorStop(0,c1);gr.addColorStop(1,c2);
+    g2.fillStyle=gr;g2.fillRect(0,0,128,96);
+    g2.fillStyle='rgba(255,255,255,.14)';
+    for(let k=0;k<5;k++)g2.fillRect(Math.random()*110,Math.random()*80,18,10);
+    const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;
+    const fr=solid(w+0.1,h+0.1,0.05,x,1.55,z,mats.wood2,false);fr.rotation.y=ry;
+    const pl=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:0.9}));
+    pl.position.set(x,1.55,z);pl.rotation.y=ry;pl.translateZ(0.035);
+    G.add(pl);furnList.push(pl);
+  };
+  art(-6.92,-2.5,Math.PI/2,1.5,0.9,'#c96f3a','#2b3a4d');   // sala
+  art(5,-4.9,0,1.3,0.8,'#3a6f52','#d8c9a5');               // master
+  art(-6.92,2.6,Math.PI/2,1.1,0.8,'#7a4a6f','#e0d9c8');    // suíte 3
+  [[-6.35,-4.85],[-1.75,-4.85]].forEach(cp=>{
+    const ct=new THREE.Mesh(new THREE.PlaneGeometry(0.95,2.5),
+      new THREE.MeshStandardMaterial({color:0xded7c9,transparent:true,opacity:0.92,side:THREE.DoubleSide,roughness:1}));
+    ct.position.set(cp[0],1.28,cp[1]);G.add(ct);furnList.push(ct);
+  });
+
+  furnMode=false;
+  /* ---- luzes ---- */
+  const hemi=new THREE.HemisphereLight(0xdfeaf5,0x2a2620,0.55);G.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff2dd,3.0);
+  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.left=-12;sun.shadow.camera.right=12;
+  sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;
+  sun.shadow.camera.near=1;sun.shadow.camera.far=80;
+  sun.shadow.bias=-0.0004;sun.shadow.radius=3;
+  G.add(sun);G.add(sun.target);
+  const nightLights=[];
+  [[-4.5,-2],[1,-3.2],[5,-2.9],[0,2],[3.6,3.4],[-5.2,2.4]].forEach(p=>{
+    const pl=new THREE.PointLight(0xffd9a0,0,9,2);
+    pl.position.set(p[0],IH-0.18,p[1]);G.add(pl);nightLights.push(pl);
+    const fx=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.05,14),
+      new THREE.MeshStandardMaterial({color:0xf8f4ea,emissive:0xffe6b8,emissiveIntensity:0.25}));
+    fx.position.set(p[0],IH-0.04,p[1]);G.add(fx);
+  });
+  G.userData={colliders,furnCols,furnList,sun,hemi,nightLights,mats,ceils:[ceil,ceilV],doors};
+  return G;
+}
+
+/* ---------- entrar / sair ---------- */
+/* ================================================================
+   ENTRAR NO IMÓVEL — delega ao WS STUDIO 3D.
+   A experiência interna é SEMPRE a do Studio: WSI, carrinho, luzes,
+   dollhouse, tour, mobiliar, WS IA. O Mundo não duplica mais o motor.
+   ================================================================ */
+function enterInterior(im){
+  if(dentroDoPortal()){ abrirNoStudio(im); return; }
+  return enterInteriorLocal(im);
+}
+function dentroDoPortal(){
+  try{ return parent!==window; }catch(e){ return false; }
+}
+function abrirNoStudio(im){
+  /* Entrar no imóvel passa a abrir o WALKTHROUGH: é lá que existe caminhada
+     com colisão real e medição. O Studio continua acessível para editar. */
+  try{
+    parent.postMessage({tipo:'ws:entrar-walkthrough',
+      imovel:{id:im.id,nome:im.nome,endereco:im.end,area:im.area,
+        quartos:im.quartos,suites:im.suites,andar:im.andar,preco:im.preco}},'*');
+    toast('Abrindo '+im.nome+' no WS Walkthrough…');
+    return;
+  }catch(e){}
+  return abrirNoStudioLegado(im);
+}
+function abrirNoStudioLegado(im){
+  const salvo=(()=>{ try{ return JSON.parse(localStorage.getItem('ws_space_'+im.id)||'null'); }catch(e){ return null; } })();
+  toast('Abrindo '+im.nome+' no WS Studio 3D…');
+  try{
+    parent.postMessage({
+      tipo:'ws:entrar-imovel',
+      imovel:{ id:im.id, nome:im.nome, endereco:im.end, area:im.area,
+        quartos:im.quartos, suites:im.suites, vagas:im.vagas, andar:im.andar,
+        preco:im.preco, status:im.status },
+      space: salvo || null
+    },'*');
+  }catch(e){ enterInteriorLocal(im); }
+}
+function enterInteriorLocal(im){
+  if(state.mode==='interior')return;
+  const g=pinOf(im);if(!g){toast('Aguarde o mapa carregar…');return;}
+  if(!g.userData.grounded)placePin(g);
+  if(!g.userData.grounded){toast('Aguardando o terreno real para posicionar o imóvel…');setTimeout(()=>enterInterior(im),600);return;}
+  fadeTo(1,()=>{
+    intIm=im;
+    intOrigin.set(g.position.x,0,g.position.z);
+    intFloorY=g.position.y+7;
+    const sm=spaceModelDoImovel(im);
+    interior=(sm && buildInteriorSM(im,sm)) || buildInterior(im);
+    window._interiorSM=!!(interior && interior.userData.origem==='space-model');
+    interior.position.set(intOrigin.x,intFloorY,intOrigin.z);
+    scene.add(interior);
+    state.mode='interior';
+    controls.enabled=false;cancelTween();
+    $('card').classList.add('hide');$('imList').classList.add('hide');
+    $('cross').classList.remove('hide');$('intBar').classList.remove('hide');
+    $('intTxt').innerHTML='<b>'+im.nome+'</b>'+(window._interiorSM?' <span style="color:#e0a63c">· projeto do WS Studio</span>':'')+
+      ' — clique p/ mouse · <b>WASD</b> anda · <b>E</b> portas · <b>T</b> planta 3D · <b>Shift</b> corre';
+    camera.position.set(intOrigin.x,intFloorY+1.68,intOrigin.z+3.9);
+    camera.lookAt(intOrigin.x-3,intFloorY+1.4,intOrigin.z-2);
+    camera.fov=68;camera.updateProjectionMatrix();
+    toast('Você está no '+(im.andar||18)+'º andar — a vista pelas janelas é o mundo real');
+    fadeTo(0);
+  });
+}
+function exitInterior(){
+  if(state.mode!=='interior')return;
+  if(plc.isLocked)plc.unlock();
+  fadeTo(1,()=>{
+    if(interior){
+      interior.traverse(o=>{
+        if(o.geometry)o.geometry.dispose();
+        if(o.material){const m=o.material;(Array.isArray(m)?m:[m]).forEach(x=>{if(x.map)x.map.dispose();x.dispose();});}
+      });
+      scene.remove(interior);interior=null;
+    }
+    state.mode='fly';dollOn=false;window._doll=false;
+    camera.fov=60;camera.updateProjectionMatrix();
+    $('cross').classList.add('hide');$('intBar').classList.add('hide');
+    const base=new THREE.Vector3(intOrigin.x,intFloorY,intOrigin.z);
+    camera.position.set(base.x+120,intFloorY+70,base.z+120);
+    controls.target.set(base.x,base.y+10,base.z);
+    controls.enabled=true;
+    if(intIm)openCard(intIm);
+    toast('De volta ao modo voo — explore a vizinhança');
+    fadeTo(0);
+  });
+}
+$('intExit').onclick=exitInterior;
+
+/* ---------- ponte com o WS Studio (portal pai) ---------- */
+addEventListener('message', ev=>{
+  const d=ev.data;
+  if(!d || typeof d!=='object') return;
+  if(d.tipo==='ws:space-model' && d.space){
+    try{
+      localStorage.setItem('ws_space_atual', JSON.stringify(d.space));
+      if(d.imovelId) localStorage.setItem('ws_space_'+d.imovelId, JSON.stringify(d.space));
+      toast('Projeto recebido do WS Studio — entre em um imóvel para percorrê-lo');
+      if(d.abrirImovel){
+        const im=IMOVEIS.find(x=>x.id===d.abrirImovel)||IMOVEIS[0];
+        if(im) enterInterior(im);
+      }
+    }catch(e){ toast('Não consegui guardar o projeto'); }
+  }
+  if(d.tipo==='ws:ir-para'){
+    const im=IMOVEIS.find(x=>x.id===d.imovelId);
+    if(im) openImovel(im,true);
+  }
+});
+try{ if(parent!==window) parent.postMessage({tipo:'ws:mundo-pronto'},'*'); }catch(e){}
+let furnOn=true;
+$('intFurn').onclick=()=>{
+  furnOn=!furnOn;
+  $('intFurn').textContent=furnOn?'Móveis: ligados':'Móveis: ocultos';
+  if(interior)interior.userData.furnList.forEach(m=>m.visible=furnOn);
+  toast(furnOn?'Móveis exibidos':'Móveis ocultados — planta livre');
+};
+renderer.domElement.addEventListener('click',()=>{
+  if(state.mode==='interior'&&!plc.isLocked)plc.lock();
+});
+
+/* ---------- movimento + colisão ---------- */
+const _pb=new THREE.Box3(),_lp=new THREE.Vector3(),_wf=new THREE.Vector3(),_wr=new THREE.Vector3();
+function collides(lx,lz,cols){
+  _pb.min.set(lx-0.28,0.25,lz-0.28);_pb.max.set(lx+0.28,1.72,lz+0.28);
+  for(let i=0;i<cols.length;i++)if(_pb.intersectsBox(cols[i]))return true;
+  return false;
+}
+hooks.push((dt)=>{
+  if(state.mode!=='interior'||!interior)return;
+  let cols=furnOn?interior.userData.colliders.concat(interior.userData.furnCols):interior.userData.colliders;
+  for(const d of (interior.userData.doors||[]))if(d.t<0.6)cols=cols.concat([d.cbox]);
+  for(const d of (interior.userData.doors||[])){
+    d.t=THREE.MathUtils.clamp(d.t+(d.open?dt*2.4:-dt*2.4),0,1);
+    const k=d.t*d.t*(3-2*d.t);
+    d.piv.rotation.y=d.a0+(d.a1-d.a0)*k;
+  }
+  if(dollOn)return;
+  // sol real dentro do apê
+  const day=THREE.MathUtils.smoothstep(lastSun.el,-0.09,0.35);
+  const sun=interior.userData.sun;
+  sun.position.copy(lastSun.v).multiplyScalar(30);sun.position.y=Math.max(sun.position.y,2);
+  sun.position.add(new THREE.Vector3(0,0,0));sun.target.position.set(0,0,0);
+  sun.intensity=3.0*day;
+  interior.userData.hemi.intensity=0.18+0.5*day;
+  interior.userData.nightLights.forEach(l=>l.intensity=(1-day)*14);
+  if(!plc.isLocked)return;
+  // andar
+  const sp=(keys.ShiftLeft||keys.ShiftRight)?6.2:3.6;
+  camera.getWorldDirection(_wf);_wf.y=0;_wf.normalize();
+  _wr.crossVectors(_wf,camera.up).normalize();
+  let vx=0,vz=0;
+  if(keys.KeyW){vx+=_wf.x;vz+=_wf.z;}
+  if(keys.KeyS){vx-=_wf.x;vz-=_wf.z;}
+  if(keys.KeyD){vx+=_wr.x;vz+=_wr.z;}
+  if(keys.KeyA){vx-=_wr.x;vz-=_wr.z;}
+  const l=Math.hypot(vx,vz);
+  if(l>0){
+    vx=vx/l*sp*dt;vz=vz/l*sp*dt;
+    _lp.copy(camera.position).sub(interior.position); // local
+    if(!collides(_lp.x+vx,_lp.z,cols))_lp.x+=vx;
+    if(!collides(_lp.x,_lp.z+vz,cols))_lp.z+=vz;
+    const bd=interior.userData.bounds;
+    if(bd){
+      _lp.x=THREE.MathUtils.clamp(_lp.x,bd.x[0],bd.x[1]);
+      _lp.z=THREE.MathUtils.clamp(_lp.z,bd.z[0],bd.z[1]);
+    } else {
+      _lp.x=THREE.MathUtils.clamp(_lp.x,-6.9,6.9);
+      _lp.z=THREE.MathUtils.clamp(_lp.z,_lp.x<-1?-7.05:-4.9,4.9);
+    }
+    bobT+=dt*7.6;
+    camera.position.set(_lp.x+interior.position.x,intFloorY+1.68+Math.sin(bobT)*0.028,_lp.z+interior.position.z);
+  }else{
+    bobT=0;
+    camera.position.y+=(intFloorY+1.68-camera.position.y)*Math.min(1,dt*10);
+  }
+});
+
+/* ---------- portas (E) e dollhouse (T) ---------- */
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.code==='KeyE'&&state.mode==='interior'&&interior&&!dollOn){
+    const px=camera.position.x-interior.position.x,pz=camera.position.z-interior.position.z;
+    let best=null,bd=2.3;
+    for(const d of (interior.userData.doors||[])){
+      const dd=Math.hypot(d.hx-px,d.hz-pz);
+      if(dd<bd){bd=dd;best=d;}
+    }
+    if(best){best.open=!best.open;toast(best.open?'Porta aberta':'Porta fechada');}
+  }
+  if(e.code==='KeyT'&&state.mode==='interior'&&interior){
+    dollOn=!dollOn;window._doll=dollOn;
+    interior.userData.ceils.forEach(c=>c.visible=!dollOn);
+    if(dollOn){
+      if(plc.isLocked)plc.unlock();
+      dollPrev={pos:camera.position.clone()};
+      controls.enabled=true;
+      controls.target.set(interior.position.x,intFloorY+1,interior.position.z);
+      camera.position.set(interior.position.x+9,intFloorY+25,interior.position.z+15);
+      $('intTxt').innerHTML='<b>Planta 3D (dollhouse)</b> — arraste para orbitar · <b>T</b> volta à 1ª pessoa';
+      toast('Modo planta: o teto sumiu — visão de dollhouse estilo Matterport');
+    }else{
+      controls.enabled=false;
+      if(dollPrev)camera.position.copy(dollPrev.pos);
+      camera.lookAt(interior.position.x,intFloorY+1.4,interior.position.z);
+      $('intTxt').innerHTML='<b>'+(intIm?intIm.nome:'Interior')+'</b> — clique p/ mouse · <b>WASD</b> anda · <b>E</b> portas · <b>T</b> planta 3D';
+    }
+  }
+});
+/* ============================================================
+   ONDA 4 — Dados vivos: clima real (Open-Meteo), chuva, estrelas,
+   trânsito TomTom (ativa automaticamente se houver chave)
+   ============================================================ */
+
+/* ---------- clima real (grátis, sem chave) ---------- */
+const WCODE={0:'céu limpo',1:'quase limpo',2:'parcialmente nublado',3:'nublado',45:'nevoeiro',48:'nevoeiro',51:'garoa',53:'garoa',55:'garoa forte',61:'chuva fraca',63:'chuva',65:'chuva forte',66:'chuva congelante',71:'neve',73:'neve',75:'neve forte',80:'pancadas de chuva',81:'pancadas',82:'pancadas fortes',95:'tempestade',96:'tempestade c/ granizo',99:'tempestade forte'};
+let wxT=0;
+async function fetchWeather(){
+  try{ // 1º tenta a Weather API do Google (da sua chave); cai p/ Open-Meteo
+    if(window._gkey){
+      const rg=await fetch('https://weather.googleapis.com/v1/currentConditions:lookup?key='+window._gkey+'&location.latitude='+state.lat+'&location.longitude='+state.lon+'&languageCode=pt-BR');
+      if(rg.ok){
+        const gj=await rg.json();
+        const tg=gj.temperature&&gj.temperature.degrees;
+        if(tg!=null){
+          if(gj.cloudCover!=null)state.cloud=gj.cloudCover;
+          state.rainMM=(gj.precipitation&&gj.precipitation.qpf&&gj.precipitation.qpf.quantity)||0;
+          $('wx').textContent=Math.round(tg)+'°C · '+((gj.weatherCondition&&gj.weatherCondition.description&&gj.weatherCondition.description.text)||'—');
+          return;
+        }
+      }
+    }
+  }catch(e){}
+  try{
+    const u='https://api.open-meteo.com/v1/forecast?latitude='+state.lat+'&longitude='+state.lon+
+      '&current=temperature_2m,precipitation,weather_code,cloud_cover,wind_speed_10m&timezone=auto';
+    const r=await fetch(u);if(!r.ok)return;
+    const c=(await r.json()).current;if(!c)return;
+    state.cloud=c.cloud_cover||0;
+    state.rainMM=c.precipitation||0;
+    $('wx').textContent=Math.round(c.temperature_2m)+'°C · '+(WCODE[c.weather_code]||'—')+(state.rainMM>0?' · chovendo':'');
+  }catch(e){}
+}
+let wxDeb=null;
+onRecenter.push(()=>{clearTimeout(wxDeb);wxDeb=setTimeout(fetchWeather,2500);});
+setInterval(fetchWeather,15*60*1000);
+
+/* ---------- chuva (partículas, só quando chove de verdade) ---------- */
+const RAIN_N=3200,rainPos=new Float32Array(RAIN_N*3);
+for(let i=0;i<RAIN_N;i++){rainPos[i*3]=(Math.random()-0.5)*260;rainPos[i*3+1]=Math.random()*150;rainPos[i*3+2]=(Math.random()-0.5)*260;}
+const rainGeo=new THREE.BufferGeometry();
+rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
+const rain=new THREE.Points(rainGeo,new THREE.PointsMaterial({color:0xaac8dd,size:1.4,sizeAttenuation:true,transparent:true,opacity:0.5,depthWrite:false}));
+rain.visible=false;rain.frustumCulled=false;scene.add(rain);
+hooks.push((dt)=>{
+  const on=state.rainMM>0&&state.mode!=='interior';
+  rain.visible=on;if(!on)return;
+  rain.position.set(camera.position.x,camera.position.y-40,camera.position.z);
+  const a=rainGeo.attributes.position.array;
+  const fall=(46+state.rainMM*10)*dt;
+  for(let i=0;i<RAIN_N;i++){a[i*3+1]-=fall;if(a[i*3+1]<0)a[i*3+1]=150;}
+  rainGeo.attributes.position.needsUpdate=true;
+});
+
+/* ---------- estrelas à noite ---------- */
+const ST_N=1500,stPos=new Float32Array(ST_N*3);
+for(let i=0;i<ST_N;i++){
+  const az=Math.random()*Math.PI*2,el=Math.asin(Math.random());
+  const r=88000;
+  stPos[i*3]=r*Math.cos(el)*Math.sin(az);stPos[i*3+1]=r*Math.sin(el);stPos[i*3+2]=r*Math.cos(el)*Math.cos(az);
+}
+const stGeo=new THREE.BufferGeometry();
+stGeo.setAttribute('position',new THREE.BufferAttribute(stPos,3));
+const starMat=new THREE.PointsMaterial({color:0xdfe9ff,size:1.7,sizeAttenuation:false,transparent:true,opacity:0});
+const stars=new THREE.Points(stGeo,starMat);
+stars.frustumCulled=false;scene.add(stars);
+hooks.push(()=>{
+  stars.position.copy(camera.position);
+  const day=THREE.MathUtils.smoothstep(lastSun.el,-0.09,0.35);
+  starMat.opacity=(1-day)*(1-state.cloud/100)*0.95;
+  stars.visible=starMat.opacity>0.03;
+});
+
+/* ---------- trânsito TomTom (liga sozinho quando houver tomtomKey no ws-config.json) ---------- */
+const ttGroup=new THREE.Group();scene.add(ttGroup);
+let ttKey=null,ttOn=false,ttBusy=false,ttTimer=null;
+function ttColor(rr){return rr>=0.8?0x35c96b:(rr>=0.55?0xe6c545:0xe04b3c);}
+function ttClear(){
+  while(ttGroup.children.length){
+    const m=ttGroup.children[0];ttGroup.remove(m);
+    if(m.geometry)m.geometry.dispose();if(m.material)m.material.dispose();
+  }
+}
+async function refreshTraffic(){
+  if(!ttKey||ttBusy)return;ttBusy=true;
+  const pts=[];const S=0.0055;
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)pts.push([state.lat+i*S,state.lon+j*S]);
+  ttClear();let got=0;
+  await Promise.all(pts.map(async p=>{
+    try{
+      const u='https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/12/json?point='+p[0]+','+p[1]+'&unit=KMPH&key='+ttKey;
+      const r=await fetch(u);if(!r.ok)return;
+      const d=(await r.json()).flowSegmentData;if(!d||!d.coordinates)return;
+      const cc=d.coordinates.coordinate||[];if(cc.length<2)return;
+      const v=[];const base=llToScene(cc[0].latitude,cc[0].longitude,1500);
+      const gy=groundAt(base.x,base.z,groundY+2200);
+      const y=(gy!=null?gy:groundY)+3.5;
+      for(const c of cc){const q=llToScene(c.latitude,c.longitude,1500);v.push(new THREE.Vector3(q.x,y,q.z));}
+      const curve=new THREE.CatmullRomCurve3(v);
+      const tube=new THREE.Mesh(
+        new THREE.TubeGeometry(curve,Math.min(120,v.length*2),2.2,6,false),
+        new THREE.MeshBasicMaterial({color:ttColor(d.currentSpeed/Math.max(1,d.freeFlowSpeed)),transparent:true,opacity:0.75,blending:THREE.AdditiveBlending,depthWrite:false}));
+      ttGroup.add(tube);got++;
+    }catch(e){}
+  }));
+  ttBusy=false;
+  if(got)toast('Trânsito em tempo real: '+got+' vias analisadas (TomTom)');
+}
+getConfig('tomtomKey').then(k=>{
+  if(!k)return;
+  ttKey=k;
+  const c=document.createElement('div');c.className='chip';c.textContent='Trânsito ao vivo';
+  c.onclick=()=>{
+    ttOn=!ttOn;c.style.borderColor=ttOn?'#35c96b':'';c.style.color=ttOn?'#fff':'';
+    if(ttOn){refreshTraffic();ttTimer=setInterval(refreshTraffic,120000);}
+    else{clearInterval(ttTimer);ttClear();}
+  };
+  $('chips').appendChild(c);
+  toast('Chave TomTom detectada — chip "Trânsito ao vivo" habilitado');
+});
+onRecenter.push(()=>{if(ttOn)setTimeout(refreshTraffic,2800);});
+hooks.push(()=>{ttGroup.visible=state.mode!=='interior';rotaG.visible=state.mode!=='interior';});
+/* ============================================================
+   ONDA 7 — Modo Rua (WASD no chão) + Street View sincronizado,
+   vida urbana (carros/pedestres via OSM), Places, Solar, HUD retrátil
+   ============================================================ */
+
+/* ---------- HUD retrátil ---------- */
+$('hudTg').onclick=()=>{
+  const mini=$('hud').classList.toggle('mini');
+  $('hudTg').textContent=mini?'+':'−';
+};
+
+/* ---------- Google Maps JS (Geocoder + Street View) ---------- */
+let mapsLoading=null;
+function loadMapsJS(){
+  if(window.google&&window.google.maps)return Promise.resolve();
+  if(mapsLoading)return mapsLoading;
+  mapsLoading=new Promise((res,rej)=>{
+    window.__wsMaps=()=>res();
+    const s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+(window._gkey||'')+'&v=weekly&loading=async&callback=__wsMaps';
+    s.onerror=()=>rej(new Error('maps js'));
+    document.head.appendChild(s);
+  });
+  return mapsLoading;
+}
+setTimeout(()=>{if(window._gkey)loadMapsJS().catch(()=>{});},6000);
+
+/* cena → lat/lon (aprox local, origem = centro atual) */
+function sceneToLL(pos){
+  return{
+    lat:state.lat-pos.z/110540,
+    lon:state.lon+pos.x/(111320*Math.cos(state.lat*D2R))
+  };
+}
+
+/* ---------- MODO RUA (andar no mundo real, estilo jogo) ---------- */
+const _wd2=new THREE.Vector3(),_wr2=new THREE.Vector3();
+function toggleWalk(){
+  if(state.mode==='interior')return;
+  if(state.mode==='walk'){exitWalk();return;}
+  const gy=groundAt(camera.position.x,camera.position.z,camera.position.y+3000);
+  if(gy==null){toast('Aguarde o terreno carregar para andar');return;}
+  state.mode='walk';controls.enabled=false;cancelTween();
+  camera.position.y=gy+1.75;
+  $('cross').classList.remove('hide');
+  $('walkBar').classList.remove('hide');
+  if(!roads.length)fetchRoads();
+  toast('Modo rua — clique para travar o mouse · WASD anda · Shift corre · R volta a voar');
+}
+function exitWalk(){
+  if(state.mode!=='walk')return;
+  state.mode='fly';
+  if(plc.isLocked)plc.unlock();
+  $('cross').classList.add('hide');
+  $('walkBar').classList.add('hide');
+  svHide();
+  const f=new THREE.Vector3();camera.getWorldDirection(f);
+  controls.target.copy(camera.position).addScaledVector(f,40);
+  controls.enabled=true;
+}
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.code==='KeyR')toggleWalk();
+  if(e.code==='KeyF')toggleFPS();
+});
+
+/* ---------- VOO LIVRE (FPS) — o mouse fica travado, nunca esbarra na borda ---------- */
+let fpsOn=false;
+function toggleFPS(){
+  if(state.mode==='interior'||state.mode==='walk')return;
+  fpsOn=!fpsOn;
+  if(fpsOn){
+    cancelTween();
+    controls.enabled=false;
+    const f=new THREE.Vector3();camera.getWorldDirection(f);
+    plc.lock();
+    $('cross').classList.remove('hide');
+    $('fpsBar').classList.remove('hide');
+    toast('Voo livre — mouse move a câmera · WASD voa · Espaço sobe · C desce · Shift acelera · F ou Esc sai');
+  }else{
+    if(plc.isLocked)plc.unlock();
+    $('cross').classList.add('hide');
+    $('fpsBar').classList.add('hide');
+    const f=new THREE.Vector3();camera.getWorldDirection(f);
+    controls.target.copy(camera.position).addScaledVector(f,300);
+    controls.enabled=true;
+  }
+  const c=$('fpsChip'); if(c){c.style.borderColor=fpsOn?'#e0a63c':'';c.style.color=fpsOn?'#fff':'';}
+}
+if(plc.addEventListener) plc.addEventListener('unlock',()=>{
+  if(fpsOn && state.mode!=='interior' && state.mode!=='walk'){ fpsOn=false; toggleFPS(); toggleFPS(); fpsOn=false;
+    $('cross').classList.add('hide'); $('fpsBar').classList.add('hide');
+    const f=new THREE.Vector3();camera.getWorldDirection(f);
+    controls.target.copy(camera.position).addScaledVector(f,300);
+    controls.enabled=true;
+    const c=$('fpsChip'); if(c){c.style.borderColor='';c.style.color='';}
+  }
+});
+renderer.domElement.addEventListener('click',()=>{
+  if(fpsOn&&!plc.isLocked&&state.mode!=='interior')plc.lock();
+});
+const _fd=new THREE.Vector3(),_fr=new THREE.Vector3();
+hooks.push(dt=>{
+  if(!fpsOn||state.mode==='interior'||state.mode==='walk')return;
+  if(!plc.isLocked)return;
+  const alt=Math.max(2,(_pisoY!=null?camera.position.y-_pisoY:120));
+  const base=Math.min(900, Math.max(14, alt*0.85));      /* voa mais rápido lá em cima */
+  const sp=base*((keys.ShiftLeft||keys.ShiftRight)?3.2:1)*dt;
+  camera.getWorldDirection(_fd);
+  _fr.crossVectors(_fd,camera.up).normalize();
+  if(keys.KeyW)camera.position.addScaledVector(_fd,sp);
+  if(keys.KeyS)camera.position.addScaledVector(_fd,-sp);
+  if(keys.KeyD)camera.position.addScaledVector(_fr,sp);
+  if(keys.KeyA)camera.position.addScaledVector(_fr,-sp);
+  if(keys.Space)camera.position.y+=sp;
+  if(keys.KeyC)camera.position.y-=sp;
+});
+renderer.domElement.addEventListener('click',()=>{
+  if(state.mode==='walk'&&!plc.isLocked)plc.lock();
+});
+$('walkExit').onclick=toggleWalk;
+$('fpsExit').onclick=()=>{ if(fpsOn) toggleFPS(); };
+/* ---------- ROTAS (traçar caminho entre dois pontos) ---------- */
+const rotaG=new THREE.Group();scene.add(rotaG);
+let rotaModo=false,rotaA=null;
+function rotaLimpar(){
+  while(rotaG.children.length){
+    const m=rotaG.children[0];rotaG.remove(m);
+    if(m.geometry)m.geometry.dispose();
+    if(m.material){const x=m.material;if(x.map)x.map.dispose();x.dispose();}
+  }
+}
+function rotaMarco(p,cor){
+  const g=new THREE.Group();
+  const pino=new THREE.Mesh(new THREE.ConeGeometry(9,26,12),
+    new THREE.MeshBasicMaterial({color:cor}));
+  pino.rotation.x=Math.PI;pino.position.y=13;
+  const anel=new THREE.Mesh(new THREE.RingGeometry(11,16,32),
+    new THREE.MeshBasicMaterial({color:cor,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));
+  anel.rotation.x=-Math.PI/2;anel.position.y=.8;
+  g.add(pino,anel);g.position.copy(p);rotaG.add(g);
+  return g;
+}
+function rotaEtiqueta(p,txt){
+  const cv=document.createElement('canvas');cv.width=560;cv.height=120;
+  const g=cv.getContext('2d');
+  g.fillStyle='rgba(12,18,26,.92)';
+  const r=26,w=548,h=108,x=6,y=6;
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fill();
+  g.strokeStyle='#e0a63c';g.lineWidth=3;g.stroke();
+  g.fillStyle='#fff';g.font='600 40px Segoe UI, sans-serif';g.fillText(txt,28,72);
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  sp.renderOrder=6;sp.position.copy(p);sp.position.y+=60;
+  sp.scale.set(260,56,1);
+  rotaG.add(sp);
+}
+function rotaTracar(a,b){
+  const N=48,pts=[];
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    const x=a.x+(b.x-a.x)*t, z=a.z+(b.z-a.z)*t;
+    const gy=groundAt(x,z,Math.max(a.y,b.y)+2500);
+    pts.push(new THREE.Vector3(x,(gy!=null?gy:Math.min(a.y,b.y))+4.5,z));
+  }
+  const curva=new THREE.CatmullRomCurve3(pts);
+  const tubo=new THREE.Mesh(
+    new THREE.TubeGeometry(curva,140,3.2,8,false),
+    new THREE.MeshBasicMaterial({color:0xe0a63c,transparent:true,opacity:.9,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  rotaG.add(tubo);
+  /* distância real acompanhando o relevo */
+  let dist=0;
+  for(let i=1;i<pts.length;i++)dist+=pts[i].distanceTo(pts[i-1]);
+  const km=dist/1000;
+  const aPe=Math.round(dist/1.35/60), carro=Math.max(1,Math.round(dist/8.3/60));
+  const meio=pts[Math.floor(pts.length/2)];
+  rotaEtiqueta(meio,(km<1?Math.round(dist)+' m':km.toFixed(2).replace('.',',')+' km')+
+    '  ·  '+carro+' min de carro  ·  '+aPe+' min a pé');
+  toast('Rota traçada: '+(km<1?Math.round(dist)+' m':km.toFixed(2).replace('.',',')+' km'));
+}
+function rotaToggle(){
+  rotaModo=!rotaModo;rotaA=null;
+  const c=$('rotaChip');
+  if(c){c.style.borderColor=rotaModo?'#e0a63c':'';c.style.color=rotaModo?'#fff':'';}
+  if(rotaModo){rotaLimpar();toast('Clique no ponto de partida e depois no destino');}
+  else{rotaLimpar();}
+}
+/* ================================================================
+   O QUE HÁ POR PERTO — pontos de interesse reais (OpenStreetMap)
+   ================================================================ */
+const poiG=new THREE.Group();scene.add(poiG);
+let poiOn=false,poiBusy=false,poiCache=null,poiFiltro=new Set();
+const POI_CATS={
+  restaurante:{n:'Restaurantes',cor:0xE8834A,q:'amenity~"restaurant|cafe|bar|fast_food"',ico:'🍽'},
+  mercado:{n:'Mercados',cor:0x4AA35E,q:'shop~"supermarket|convenience|bakery|greengrocer"',ico:'🛒'},
+  escola:{n:'Escolas',cor:0x4A79C4,q:'amenity~"school|kindergarten|university|college"',ico:'🎓'},
+  saude:{n:'Saúde',cor:0xC44A4A,q:'amenity~"hospital|clinic|pharmacy|doctors|dentist"',ico:'✚'},
+  academia:{n:'Academias',cor:0xB05CC4,q:'leisure~"fitness_centre|sports_centre"',ico:'🏋'},
+  lazer:{n:'Praças e parques',cor:0x3EA88C,q:'leisure~"park|playground|garden|pitch"',ico:'🌳'},
+  banco:{n:'Bancos',cor:0xC9A961,q:'amenity~"bank|atm"',ico:'$'},
+  transporte:{n:'Transporte',cor:0x7A8CA0,q:'highway~"bus_stop"',ico:'⇄'}
+};
+function poiLimpar(){
+  while(poiG.children.length){
+    const m=poiG.children[0];poiG.remove(m);
+    if(m.geometry)m.geometry.dispose();
+    if(m.material){const x=m.material;if(x.map)x.map.dispose();x.dispose();}
+  }
+}
+function poiEtiqueta(nome,cat,dist){
+  const c=POI_CATS[cat];
+  const cv=document.createElement('canvas');cv.width=520;cv.height=104;
+  const g=cv.getContext('2d');
+  g.fillStyle='rgba(12,18,26,.93)';
+  const r=24,w=508,h=92,x=6,y=6;
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();g.fill();
+  g.strokeStyle='#'+c.cor.toString(16).padStart(6,'0');g.lineWidth=3;g.stroke();
+  g.fillStyle='#fff';g.font='600 32px Segoe UI, sans-serif';
+  const nm=nome.length>26?nome.slice(0,25)+'…':nome;
+  g.fillText(nm,26,46);
+  g.fillStyle='#'+c.cor.toString(16).padStart(6,'0');g.font='500 26px Segoe UI, sans-serif';
+  g.fillText(c.n.replace(/s$/,'')+(dist?'  ·  '+dist:''),26,82);
+  const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  sp.renderOrder=5;sp.scale.set(150,30,1);
+  return sp;
+}
+function poiMarco(p,cat,nome,dist){
+  const c=POI_CATS[cat];
+  const g=new THREE.Group();
+  const haste=new THREE.Mesh(new THREE.CylinderGeometry(0.9,0.9,26,8),
+    new THREE.MeshBasicMaterial({color:c.cor,transparent:true,opacity:.55,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  haste.position.y=13;
+  const bola=new THREE.Mesh(new THREE.SphereGeometry(4.2,14,10),
+    new THREE.MeshBasicMaterial({color:c.cor}));
+  bola.position.y=30;
+  const anel=new THREE.Mesh(new THREE.RingGeometry(6,8.5,28),
+    new THREE.MeshBasicMaterial({color:c.cor,transparent:true,opacity:.5,
+      side:THREE.DoubleSide,depthWrite:false}));
+  anel.rotation.x=-Math.PI/2;anel.position.y=1;
+  const et=poiEtiqueta(nome,cat,dist);et.position.y=46;
+  g.add(haste,bola,anel,et);
+  g.position.copy(p);
+  g.userData={cat,nome,fase:Math.random()*6.28,bola,anel};
+  poiG.add(g);
+  return g;
+}
+async function poiBuscar(){
+  if(poiBusy)return;poiBusy=true;
+  poiLimpar();
+  toast('Procurando o que há por perto…');
+  const R=0.009;                      /* ~1 km */
+  const bb=(state.lat-R)+','+(state.lon-R)+','+(state.lat+R)+','+(state.lon+R);
+  const partes=Object.values(POI_CATS).map(c=>
+    `node[${c.q}](${bb});way[${c.q}](${bb});`).join('');
+  const q=`[out:json][timeout:25];(${partes});out center 160;`;
+  let dados=null;
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',
+      {method:'POST',body:'data='+encodeURIComponent(q)});
+    if(r.ok) dados=await r.json();
+  }catch(e){}
+  if(!dados||!dados.elements||!dados.elements.length){
+    poiBusy=false;
+    toast('Não consegui consultar o mapa agora — tente novamente em instantes');
+    return;
+  }
+  const catDe=t=>{
+    if(!t)return null;
+    if(/restaurant|cafe|bar|fast_food/.test(t.amenity||''))return 'restaurante';
+    if(/supermarket|convenience|bakery|greengrocer/.test(t.shop||''))return 'mercado';
+    if(/school|kindergarten|university|college/.test(t.amenity||''))return 'escola';
+    if(/hospital|clinic|pharmacy|doctors|dentist/.test(t.amenity||''))return 'saude';
+    if(/fitness_centre|sports_centre/.test(t.leisure||''))return 'academia';
+    if(/park|playground|garden|pitch/.test(t.leisure||''))return 'lazer';
+    if(/bank|atm/.test(t.amenity||''))return 'banco';
+    if(/bus_stop/.test(t.highway||''))return 'transporte';
+    return null;
+  };
+  let n=0;
+  const contagem={};
+  for(const el of dados.elements){
+    const t=el.tags||{};
+    const cat=catDe(t);
+    if(!cat)continue;
+    const nome=t.name||POI_CATS[cat].n.replace(/s$/,'');
+    const la=el.lat||(el.center&&el.center.lat), lo=el.lon||(el.center&&el.center.lon);
+    if(la==null||lo==null)continue;
+    const v=llToScene(la,lo,1500);
+    const gy=groundAt(v.x,v.z,groundY+2500);
+    const dx=(lo-state.lon)*111320*Math.cos(state.lat*D2R), dz=(la-state.lat)*110540;
+    const dm=Math.hypot(dx,dz);
+    const dist=dm<1000?Math.round(dm)+' m':(dm/1000).toFixed(1).replace('.',',')+' km';
+    poiMarco(new THREE.Vector3(v.x,(gy!=null?gy:groundY),v.z),cat,nome,dist);
+    contagem[cat]=(contagem[cat]||0)+1;
+    if(++n>=120)break;
+  }
+  poiBusy=false;
+  poiCache=contagem;
+  const resumo=Object.entries(contagem).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>v+' '+POI_CATS[k].n.toLowerCase()).slice(0,4).join(' · ');
+  toast(n?('Por perto: '+resumo):'Nada encontrado neste raio');
+  poiPainel();
+}
+function poiPainel(){
+  let el=$('poiBox');
+  if(!el){
+    el=document.createElement('div');el.id='poiBox';el.className='panel';
+    el.style.cssText='position:fixed;right:12px;bottom:96px;z-index:22;max-width:220px;'+
+      'display:flex;flex-direction:column;gap:5px;padding:11px 13px';
+    document.body.appendChild(el);
+  }
+  el.classList.remove('hide');
+  el.innerHTML='<div style="font-size:10px;letter-spacing:.16em;color:#8fa3b5">O QUE HÁ POR PERTO</div>'+
+    Object.entries(POI_CATS).map(([k,c])=>{
+      const q=(poiCache&&poiCache[k])||0;
+      const off=poiFiltro.has(k);
+      return `<div class="ri" data-poi="${k}" style="display:flex;align-items:center;gap:8px;opacity:${q?(off?.35:1):.25}">
+        <span style="width:9px;height:9px;border-radius:50%;background:#${c.cor.toString(16).padStart(6,'0')}"></span>
+        <span style="flex:1">${c.n}</span><b style="color:#e0a63c">${q}</b></div>`;
+    }).join('')+
+    '<button id="poiOff" style="margin-top:4px;background:transparent;border:1px solid #2a3947;color:#9fb3c4">Ocultar</button>';
+  el.querySelectorAll('[data-poi]').forEach(d=>d.onclick=()=>{
+    const k=d.dataset.poi;
+    if(poiFiltro.has(k))poiFiltro.delete(k);else poiFiltro.add(k);
+    poiPainel();
+  });
+  $('poiOff').onclick=()=>poiToggle();
+}
+function poiToggle(){
+  poiOn=!poiOn;
+  const c=$('poiChip');
+  if(c){c.style.borderColor=poiOn?'#e0a63c':'';c.style.color=poiOn?'#fff':'';}
+  if(poiOn){ poiBuscar(); }
+  else{ poiLimpar(); poiFiltro.clear(); const b=$('poiBox'); if(b)b.classList.add('hide'); }
+}
+hooks.push((dt,t)=>{
+  poiG.visible=poiOn&&state.mode!=='interior';
+  if(!poiG.visible)return;
+  for(const g of poiG.children){
+    const u=g.userData;
+    g.visible=!poiFiltro.has(u.cat);
+    if(!g.visible)continue;
+    u.bola.position.y=30+Math.sin(t*1.6+u.fase)*2.2;
+    u.anel.scale.setScalar(1+Math.sin(t*1.2+u.fase)*0.12);
+    g.children[3].position.y=46+Math.sin(t*1.6+u.fase)*2.2;
+  }
+});
+onRecenter.push(()=>{ if(poiOn) setTimeout(poiBuscar,2600); });
+const pchip=document.createElement('div');pchip.className='chip';pchip.id='poiChip';
+pchip.textContent='O que há por perto';pchip.onclick=poiToggle;$('chips').appendChild(pchip);
+
+const rchip=document.createElement('div');rchip.className='chip';rchip.id='rotaChip';
+rchip.textContent='Traçar rota';rchip.onclick=rotaToggle;$('chips').appendChild(rchip);
+const fchip=document.createElement('div');fchip.className='chip';fchip.id='fpsChip';
+fchip.textContent='Voo livre (F)';fchip.onclick=toggleFPS;$('chips').appendChild(fchip);
+
+const wchip=document.createElement('div');wchip.className='chip';wchip.textContent='Andar na rua (R)';
+wchip.onclick=toggleWalk;$('chips').appendChild(wchip);
+
+hooks.push((dt)=>{
+  if(state.mode!=='walk')return;
+  if(plc.isLocked){
+    const sp=(keys.ShiftLeft||keys.ShiftRight)?9.5:5.4;
+    camera.getWorldDirection(_wd2);_wd2.y=0;_wd2.normalize();
+    _wr2.crossVectors(_wd2,camera.up).normalize();
+    let vx=0,vz=0;
+    if(keys.KeyW){vx+=_wd2.x;vz+=_wd2.z;}
+    if(keys.KeyS){vx-=_wd2.x;vz-=_wd2.z;}
+    if(keys.KeyD){vx+=_wr2.x;vz+=_wr2.z;}
+    if(keys.KeyA){vx-=_wr2.x;vz-=_wr2.z;}
+    const l=Math.hypot(vx,vz);
+    if(l>0){camera.position.x+=vx/l*sp*dt;camera.position.z+=vz/l*sp*dt;}
+  }
+  const gy=groundAt(camera.position.x,camera.position.z,camera.position.y+160);
+  if(gy!=null){
+    const ty=gy+1.75;
+    camera.position.y+=(ty-camera.position.y)*Math.min(1,dt*7);
+  }
+  svSync(dt);
+});
+
+/* ---------- Street View sincronizado (PiP) ---------- */
+let svPano=null,svOn=false,svAcc=9,svLast=new THREE.Vector3(1e9,0,0);
+function svHide(){$('svp').classList.add('hide');svOn=false;}
+async function svShow(){
+  try{
+    await loadMapsJS();
+    $('svp').classList.remove('hide');svOn=true;svAcc=9;
+    toast('Street View real sincronizado com a sua posição');
+  }catch(e){toast('Não consegui carregar o Street View (Maps JavaScript API ativa?)');}
+}
+$('svBtn').onclick=()=>{svOn?svHide():svShow();};
+const _svd=new THREE.Vector3();
+function svSync(dt){
+  if(!svOn||!window.google||!google.maps)return;
+  svAcc+=dt;
+  if(svAcc<2||camera.position.distanceTo(svLast)<4)return;
+  svAcc=0;svLast.copy(camera.position);
+  const ll=sceneToLL(camera.position);
+  camera.getWorldDirection(_svd);
+  const heading=(Math.atan2(_svd.x,-_svd.z)*180/Math.PI+360)%360;
+  if(!svPano){
+    svPano=new google.maps.StreetViewPanorama($('svp'),{
+      position:{lat:ll.lat,lng:ll.lon},
+      pov:{heading,pitch:0},
+      addressControl:false,fullscreenControl:false,zoomControl:false,
+      motionTracking:false,motionTrackingControl:false,linksControl:true
+    });
+  }else{
+    svPano.setPosition({lat:ll.lat,lng:ll.lon});
+    svPano.setPov({heading,pitch:0});
+  }
+}
+
+/* ---------- Geocoder Google já é usado na busca (fallback Nominatim no core) ---------- */
+
+/* ---------- VIDA URBANA — carros e pedestres sobre as vias reais (OSM) ---------- */
+const cityG=new THREE.Group();scene.add(cityG);
+let roads=[],walks=[],lifeOn=true,lifeBusy=false,lifeTimer=null;
+let carMesh=null,pedMesh=null,carAg=[],pedAg=[],lifeFrame=0;
+async function fetchRoads(){
+  if(lifeBusy)return;lifeBusy=true;
+  try{
+    const R=0.008;
+    const bb=(state.lat-R)+','+(state.lon-R)+','+(state.lat+R)+','+(state.lon+R);
+    const q='[out:json][timeout:25];way["highway"~"^(primary|secondary|tertiary|residential|unclassified|living_street|footway|pedestrian)$"]('+bb+');out geom;';
+    const r=await fetch('https://maps.mail.ru/osm/tools/overpass/api/interpreter?data='+encodeURIComponent(q));
+    const j=await r.json();
+    roads=[];walks=[];
+    for(const w of (j.elements||[])){
+      if(!w.geometry||w.geometry.length<2||!w.tags)continue;
+      const pts=w.geometry.map(g=>{const v=llToScene(g.lat,g.lon,0);return new THREE.Vector2(v.x,v.z);});
+      if(/^(footway|pedestrian)$/.test(w.tags.highway))walks.push(pts);
+      else{roads.push(pts);walks.push(pts);}
+    }
+    buildAgents();buildLights();
+    if(roads.length)toast('Vida urbana ativa: '+roads.length+' vias reais na área');
+  }catch(e){}
+  lifeBusy=false;
+}
+function pathLen(p){const L=[0];for(let i=1;i<p.length;i++)L.push(L[i-1]+p[i].distanceTo(p[i-1]));return L;}
+function sampleP(p,L,d){
+  const T=L[L.length-1]||1;d=((d%T)+T)%T;
+  let i=1;while(i<L.length-1&&L[i]<d)i++;
+  const f=(d-L[i-1])/((L[i]-L[i-1])||1);
+  return{x:p[i-1].x+(p[i].x-p[i-1].x)*f,z:p[i-1].y+(p[i].y-p[i-1].y)*f,dx:p[i].x-p[i-1].x,dz:p[i].y-p[i-1].y};
+}
+function killMesh(m){if(m){cityG.remove(m);m.geometry.dispose();m.material.dispose();}}
+function buildAgents(){
+  killMesh(carMesh);killMesh(pedMesh);carMesh=pedMesh=null;carAg=[];pedAg=[];
+  const rv=roads.filter(p=>p.length>1),wv=walks.filter(p=>p.length>1);
+  if(rv.length){
+    const N=Math.min(46,rv.length*4);
+    carMesh=new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1.85,1.3,4.4),
+      new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0.65,roughness:0.3,clearcoat:1,clearcoatRoughness:0.12}),N);
+    const cols=[0x9aa3ad,0x22272e,0xc4cbd2,0x5a1f1f,0x1d3350,0xd9d9d9,0x3a3f45,0x6b4f34];
+    for(let i=0;i<N;i++){
+      const p=rv[i%rv.length],L=pathLen(p);
+      carAg.push({p,L,d:Math.random()*(L[L.length-1]||1),s:(6.5+Math.random()*6)*(Math.random()<0.5?1:-1),y:groundY});
+      carMesh.setColorAt(i,new THREE.Color(cols[i%cols.length]));
+    }
+    if(carMesh.instanceColor)carMesh.instanceColor.needsUpdate=true;
+    carMesh.castShadow=false;cityG.add(carMesh);
+  }
+  if(wv.length){
+    const N=Math.min(70,wv.length*5);
+    pedMesh=new THREE.InstancedMesh(
+      new THREE.CapsuleGeometry(0.24,1.05,3,8),
+      new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.92}),N);
+    const cols=[0xc7743c,0x4d6b8a,0x7a5f8a,0x5f7a4d,0x8a4d4d,0xd9c9a5,0x39424c];
+    for(let i=0;i<N;i++){
+      const p=wv[i%wv.length],L=pathLen(p);
+      pedAg.push({p,L,d:Math.random()*(L[L.length-1]||1),s:(0.9+Math.random()*0.7)*(Math.random()<0.5?1:-1),off:(Math.random()<0.5?-1:1)*(2+Math.random()*1.4),y:groundY});
+      pedMesh.setColorAt(i,new THREE.Color(cols[i%cols.length]));
+    }
+    if(pedMesh.instanceColor)pedMesh.instanceColor.needsUpdate=true;
+    cityG.add(pedMesh);
+  }
+}
+const _m4=new THREE.Matrix4(),_q4=new THREE.Quaternion(),_s4=new THREE.Vector3(1,1,1),_e4=new THREE.Euler(),_p4=new THREE.Vector3();
+hooks.push((dt)=>{
+  cityG.visible=lifeOn&&state.mode!=='interior';
+  if(!cityG.visible)return;
+  if(camera.position.y-groundY>2800)return;
+  lifeFrame++;
+  if(carMesh){
+    for(let i=0;i<carAg.length;i++){
+      const a=carAg[i];a.d+=a.s*dt;
+      const s=sampleP(a.p,a.L,a.d);
+      if((lifeFrame+i)%90===0){const gy=groundAt(s.x,s.z,a.y+300);if(gy!=null)a.y=gy;}
+      _e4.set(0,Math.atan2(s.dx*Math.sign(a.s),s.dz*Math.sign(a.s)),0);
+      _q4.setFromEuler(_e4);
+      _p4.set(s.x,a.y+0.7,s.z);
+      _m4.compose(_p4,_q4,_s4);
+      carMesh.setMatrixAt(i,_m4);
+    }
+    carMesh.instanceMatrix.needsUpdate=true;
+  }
+  if(pedMesh){
+    for(let i=0;i<pedAg.length;i++){
+      const a=pedAg[i];a.d+=a.s*dt;
+      const s=sampleP(a.p,a.L,a.d);
+      if((lifeFrame+i)%90===45){const gy=groundAt(s.x,s.z,a.y+300);if(gy!=null)a.y=gy;}
+      const nl=Math.hypot(s.dx,s.dz)||1;
+      _e4.set(0,Math.atan2(s.dx*Math.sign(a.s),s.dz*Math.sign(a.s)),0);
+      _q4.setFromEuler(_e4);
+      _p4.set(s.x-s.dz/nl*a.off,a.y+0.85,s.z+s.dx/nl*a.off);
+      _m4.compose(_p4,_q4,_s4);
+      pedMesh.setMatrixAt(i,_m4);
+    }
+    pedMesh.instanceMatrix.needsUpdate=true;
+  }
+});
+const lchip=document.createElement('div');lchip.className='chip';lchip.textContent='Vida urbana';
+lchip.style.borderColor='#e0a63c';
+lchip.onclick=()=>{lifeOn=!lifeOn;lchip.style.borderColor=lifeOn?'#e0a63c':'';toast(lifeOn?'Vida urbana ligada':'Vida urbana desligada');};
+$('chips').appendChild(lchip);
+onRecenter.push(()=>{
+  roads=[];walks=[];buildAgents();
+  clearTimeout(lifeTimer);lifeTimer=setTimeout(fetchRoads,4000);
+});
+setTimeout(fetchRoads,9000);
+
+/* ---------- Places API (New): o que há por perto ---------- */
+async function nearby(im,el){
+  if(!window._gkey){el.innerHTML='<div class="ri">chave indisponível</div>';return;}
+  el.innerHTML='<div class="ri">buscando…</div>';
+  try{
+    const r=await fetch('https://places.googleapis.com/v1/places:searchNearby',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Goog-Api-Key':window._gkey,
+        'X-Goog-FieldMask':'places.displayName,places.types,places.rating'},
+      body:JSON.stringify({
+        includedTypes:['school','supermarket','restaurant','pharmacy','park','gym','hospital','shopping_mall'],
+        maxResultCount:10,rankPreference:'DISTANCE',
+        languageCode:'pt-BR',
+        locationRestriction:{circle:{center:{latitude:im.lat,longitude:im.lon},radius:900}}
+      })});
+    const j=await r.json();
+    const T={school:'Escola',supermarket:'Mercado',restaurant:'Restaurante',pharmacy:'Farmácia',park:'Parque',gym:'Academia',hospital:'Hospital',shopping_mall:'Shopping'};
+    el.innerHTML=(j.places||[]).slice(0,8).map(p=>{
+      const t=(p.types||[]).map(x=>T[x]).filter(Boolean)[0]||'Local';
+      return '<div class="ri">'+t+' · '+((p.displayName&&p.displayName.text)||'')+(p.rating?' · ★'+p.rating:'')+'</div>';
+    }).join('')||'<div class="ri">nada num raio de 900 m</div>';
+  }catch(e){el.innerHTML='<div class="ri">Places API indisponível nesta chave</div>';}
+}
+
+/* ---------- Solar API: insolação do telhado (argumento de venda) ---------- */
+async function solarInfo(im,el){
+  if(!window._gkey||!el)return;
+  try{
+    const r=await fetch('https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude='+im.lat+'&location.longitude='+im.lon+'&requiredQuality=LOW&key='+window._gkey);
+    if(!r.ok)return;
+    const j=await r.json();
+    const s=j.solarPotential;
+    if(s&&s.maxSunshineHoursPerYear)el.textContent='☀ Solar API: '+Math.round(s.maxSunshineHoursPerYear)+' h de sol/ano no telhado · potencial p/ '+(s.maxArrayPanelsCount||0)+' painéis';
+  }catch(e){}
+}
+/* ============================================================
+   ONDA 9 — comparador lado a lado, noite urbana (postes),
+   WS Score (Places+Solar+TomTom), digital twin da obra
+   ============================================================ */
+
+/* ---------- 1) comparador 3D lado a lado ---------- */
+let cmpOv=null;
+function openCompare(imA){
+  const others=IMOVEIS.filter(x=>x!==imA);
+  if(!others.length)return;
+  const pick=document.createElement('div');pick.className='panel';
+  pick.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:14px 16px;z-index:70;width:300px';
+  pick.innerHTML='<b>Comparar '+imA.nome+' com:</b>';
+  others.forEach(o=>{
+    const d=document.createElement('div');d.className='ri';
+    d.textContent=o.nome+' · '+fmtBRL(o.preco);
+    d.onclick=()=>{document.body.removeChild(pick);showCompare(imA,o);};
+    pick.appendChild(d);
+  });
+  const x=document.createElement('button');x.textContent='Cancelar';x.className='ghost';
+  x.style.marginTop='9px';x.onclick=()=>document.body.removeChild(pick);
+  pick.appendChild(x);
+  document.body.appendChild(pick);
+}
+function showCompare(a,b){
+  if(!cmpOv){
+    cmpOv=document.createElement('div');
+    cmpOv.style.cssText='position:fixed;inset:0;z-index:80;background:#0b1016;display:flex;flex-direction:column';
+    const bar=document.createElement('div');
+    bar.style.cssText='height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#101823;color:#fff;font:600 13px Segoe UI,sans-serif;border-bottom:1px solid #263543';
+    bar.innerHTML='<span>White Stone · Comparação 3D lado a lado</span>';
+    const bt=document.createElement('button');bt.textContent='✕ Fechar';
+    bt.onclick=()=>{cmpOv.style.display='none';cmpOv.querySelectorAll('iframe').forEach(f=>f.src='about:blank');};
+    bar.appendChild(bt);
+    const row=document.createElement('div');row.style.cssText='flex:1;display:flex;gap:2px';row.id='cmpRow';
+    cmpOv.appendChild(bar);cmpOv.appendChild(row);
+    document.body.appendChild(cmpOv);
+  }
+  cmpOv.style.display='flex';
+  const row=cmpOv.querySelector('#cmpRow');row.innerHTML='';
+  [a,b].forEach(im=>{
+    const f=document.createElement('iframe');
+    f.style.cssText='flex:1;border:0;min-width:0';
+    f.src=location.pathname+'?imovel='+encodeURIComponent(im.id);
+    row.appendChild(f);
+  });
+  toast('Dois mundos reais lado a lado — um por imóvel');
+}
+
+/* ---------- 8) noite urbana: postes de luz nas vias reais ---------- */
+let lightPts=null;
+function buildLights(){
+  if(lightPts){scene.remove(lightPts);lightPts.geometry.dispose();lightPts.material.dispose();lightPts=null;}
+  if(!roads.length)return;
+  const pos=[];
+  for(const p of roads){
+    for(let i=1;i<p.length&&pos.length<3600;i++){
+      const a=p[i-1],b=p[i],seg=Math.hypot(b.x-a.x,b.y-a.y);
+      for(let d=18;d<seg;d+=36){
+        const t=d/seg,x=a.x+(b.x-a.x)*t,z=a.y+(b.y-a.y)*t;
+        const gy=groundAt(x,z,groundY+900);
+        pos.push(x,(gy!=null?gy:groundY)+8.5,z);
+      }
+    }
+  }
+  if(!pos.length)return;
+  const ge=new THREE.BufferGeometry();
+  ge.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));
+  lightPts=new THREE.Points(ge,new THREE.PointsMaterial({
+    color:0xffc27a,size:5.5,sizeAttenuation:true,transparent:true,opacity:0,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  lightPts.frustumCulled=false;scene.add(lightPts);
+}
+hooks.push(()=>{
+  if(!lightPts)return;
+  const day=THREE.MathUtils.smoothstep(lastSun.el,-0.09,0.35);
+  lightPts.material.opacity=(1-day)*0.95;
+  lightPts.visible=state.mode!=='interior'&&lightPts.material.opacity>0.04;
+});
+
+/* ---------- 9) WS Score — qualidade de vida (Places + Solar + trânsito) ---------- */
+async function wsScore(im,el){
+  if(!window._gkey||!el)return;
+  try{
+    const [pr,sr]=await Promise.all([
+      fetch('https://places.googleapis.com/v1/places:searchNearby',{method:'POST',
+        headers:{'Content-Type':'application/json','X-Goog-Api-Key':window._gkey,'X-Goog-FieldMask':'places.types'},
+        body:JSON.stringify({includedTypes:['school','supermarket','restaurant','pharmacy','park','gym','hospital','shopping_mall','bank','bakery'],
+          maxResultCount:20,locationRestriction:{circle:{center:{latitude:im.lat,longitude:im.lon},radius:900}}})
+      }).then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude='+im.lat+'&location.longitude='+im.lon+'&requiredQuality=LOW&key='+window._gkey)
+        .then(r=>r.ok?r.json():null).catch(()=>null)
+    ]);
+    const types=new Set();let cnt=0;
+    if(pr&&pr.places){cnt=pr.places.length;pr.places.forEach(p=>(p.types||[]).forEach(t=>types.add(t)));}
+    const pS=Math.min(1,cnt/12)*0.6+Math.min(1,types.size/10)*0.4;
+    const sh=(sr&&sr.solarPotential&&sr.solarPotential.maxSunshineHoursPerYear)||0;
+    const sS=sh?THREE.MathUtils.clamp((sh-1100)/500,0,1):0.5;
+    let tS=0.72; // neutro sem dado de trânsito
+    const render=()=>{
+      const sc=Math.round(pS*45+sS*30+tS*25);
+      el.innerHTML='<b style="color:#e0a63c">WS Score '+sc+'/100</b> · conveniências '+Math.round(pS*100)+
+        ' · sol '+Math.round(sS*100)+' · mobilidade '+Math.round(tS*100)+
+        ' <span style="opacity:.55">(Places + Solar'+(typeof ttKey!=='undefined'&&ttKey?' + TomTom':'')+')</span>';
+    };
+    render();
+    if(typeof ttKey!=='undefined'&&ttKey){
+      try{
+        const r=await fetch('https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/12/json?point='+im.lat+','+im.lon+'&key='+ttKey);
+        if(r.ok){const d=(await r.json()).flowSegmentData;
+          if(d&&d.freeFlowSpeed){tS=THREE.MathUtils.clamp(d.currentSpeed/d.freeFlowSpeed,0.2,1);render();}}
+      }catch(e){}
+    }
+  }catch(e){}
+}
+
+/* ---------- Bônus) digital twin da obra — fases sobre o terreno real ---------- */
+let obraG=null,obraIm=null,obraParts=null;
+function closeObra(){
+  if(obraG){scene.remove(obraG);obraG.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});obraG=null;obraIm=null;}
+  const c=document.getElementById('obraCtl');if(c)c.remove();
+}
+function toggleObra(im){
+  if(obraG&&obraIm===im){closeObra();return;}
+  closeObra();
+  const g=pinOf(im);
+  if(!g||!g.userData.grounded){toast('Aguarde o terreno carregar para simular a obra');return;}
+  obraIm=im;
+  obraG=new THREE.Group();obraG.position.copy(g.position);
+  const N=Math.max(8,(im.andar||10)+2),FH=3,H=N*FH,FW=26,FD=19;
+  const mCon=new THREE.MeshStandardMaterial({color:0xb9b2a6,roughness:0.92});
+  const mGla=new THREE.MeshPhysicalMaterial({color:0x9fd8ff,metalness:0.2,roughness:0.12,transparent:true,opacity:0.5});
+  const mSteel=new THREE.MeshStandardMaterial({color:0xd9c53c,roughness:0.5,metalness:0.6});
+  const mk=(w,h,d,mat)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);b.geometry.translate(0,h/2,0);obraG.add(b);return b;};
+  const terreno=mk(FW+10,0.5,FD+10,new THREE.MeshStandardMaterial({color:0x8a6f52,roughness:1}));
+  const fund=mk(FW,1.4,FD,mCon);
+  const estrut=mk(FW-2,H,FD-2,mCon);
+  const fach=mk(FW-1.2,H,FD-1.2,mGla);
+  const mast=mk(1.4,H+18,1.4,mSteel);mast.position.set(FW/2+6,0,0);
+  const jib=new THREE.Mesh(new THREE.BoxGeometry(22,1,1.2),mSteel);
+  jib.position.set(FW/2+6,H+17,0);jib.geometry.translate(8,0,0);obraG.add(jib);
+  obraParts={terreno,fund,estrut,fach,mast,jib,H,N,FH};
+  scene.add(obraG);
+  const c=document.createElement('div');c.id='obraCtl';c.className='panel';
+  c.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);padding:10px 16px;z-index:30;display:flex;gap:10px;align-items:center;width:420px';
+  c.innerHTML='<b style="color:#e0a63c;white-space:nowrap">Obra · '+im.nome+'</b><input type="range" id="obraP" min="0" max="100" value="35" style="flex:1"><span id="obraF" style="width:86px;font-size:11.5px"></span><button class="ghost" id="obraX">✕</button>';
+  document.body.appendChild(c);
+  document.getElementById('obraX').onclick=closeObra;
+  const ap=v=>applyObra(v/100);
+  document.getElementById('obraP').oninput=e=>ap(+e.target.value);
+  ap(35);
+  toast('Digital twin da obra — arraste a fase no controle inferior');
+}
+function applyObra(p){
+  if(!obraParts)return;
+  const o=obraParts;
+  o.fund.visible=p>0.04;
+  const pe=THREE.MathUtils.clamp(p/0.75,0,1);          // estrutura sobe até 75%
+  o.estrut.scale.y=Math.max(0.001,pe);
+  const pf=THREE.MathUtils.clamp((p-0.55)/0.45,0,1);   // fachada de vidro 55→100%
+  o.fach.scale.y=Math.max(0.001,pf);o.fach.visible=pf>0.01;
+  const cr=p>0.06&&p<0.93;o.mast.visible=cr;o.jib.visible=cr;
+  const f=document.getElementById('obraF');
+  if(f)f.textContent=p<0.05?'Terreno':(p<0.18?'Fundação':(p<0.75?'Estrutura '+Math.round(o.N*pe)+'/'+o.N+' pav.':(p<1?'Fachada':'Entregue')));
+}
+hooks.push((dt,t)=>{if(obraParts&&obraParts.jib.visible)obraParts.jib.rotation.y=Math.sin(t*0.15)*1.2;});
+/* ============================================================
+   ONDA 8 — painel em seções retráteis + amarrações de UI
+   ============================================================ */
+document.querySelectorAll('#hud .sec').forEach(sec=>{
+  const h=sec.querySelector('h4');if(!h)return;
+  const t=h.textContent.replace(/^[▸▾]\s*/,'');
+  const up=()=>h.textContent=(sec.classList.contains('closed')?'▸ ':'▾ ')+t;
+  h.style.cursor='pointer';
+  h.onclick=()=>{sec.classList.toggle('closed');up();};
+  up();
+});
+if($('btnWalk'))$('btnWalk').onclick=()=>toggleWalk();
+/* ============================================================
+   ONDA 5+6 — Integração site (deep-link + postMessage), tour,
+   foto, compartilhar, bússola, onboarding, auto-qualidade, boot
+   ============================================================ */
+
+/* ---------- deep-link (?lat&lon&alt&hora&imovel&nome) ---------- */
+const URLP=new URLSearchParams(location.search);
+let deepImovel=null;
+(function(){
+  const la=parseFloat(URLP.get('lat')),lo=parseFloat(URLP.get('lon'));
+  if(isFinite(la)&&isFinite(lo)){state.lat=la;state.lon=lo;}
+  const h=parseFloat(URLP.get('hora'));
+  if(isFinite(h)){state.hour=h;$('hora').value=h;$('horaV').textContent=fmtH(h);}
+  if(URLP.get('nome'))$('place').textContent=URLP.get('nome');
+  deepImovel=URLP.get('imovel');
+})();
+
+/* ---------- API postMessage p/ o site White Stone (SDK) ---------- */
+addEventListener('message',e=>{
+  const d=e.data;if(!d||d.type!=='ws3d')return;
+  if(d.cmd==='open'&&isFinite(d.lat)&&isFinite(d.lon))flyTo(d.lat,d.lon,d.alt||700,d.nome||'');
+  if(d.cmd==='imovel'&&d.id){const im=IMOVEIS.find(x=>x.id===d.id);if(im)openImovel(im,true);}
+  if(d.cmd==='hora'&&isFinite(d.valor)){state.hour=+d.valor;$('hora').value=state.hour;$('horaV').textContent=fmtH(state.hour);}
+});
+
+/* ---------- tour cinematográfico ---------- */
+let tourOn=false,tourIdx=0,tourTimer=null;
+function tourStop(){if(!tourOn)return;tourOn=false;clearTimeout(tourTimer);cancelTween();toast('Tour encerrado');}
+function tourLeg(){
+  if(!tourOn)return;
+  const list=IMOVEIS.length?IMOVEIS:null;
+  if(list){
+    const im=list[tourIdx%list.length];tourIdx++;
+    openCard(im);flyToImovel(im);
+    tourTimer=setTimeout(tourLeg,9000);
+  }
+}
+$('tourBtn').onclick=()=>{
+  if(tourOn){tourStop();return;}
+  tourOn=true;tourIdx=0;toast('Tour White Stone — clique em Tour de novo para parar');
+  tourLeg();
+};
+renderer.domElement.addEventListener('pointerdown',()=>{if(tourOn)tourStop();});
+
+/* ---------- foto (screenshot PNG) ---------- */
+$('shotBtn').onclick=()=>{
+  renderer.render(scene,camera);
+  const a=document.createElement('a');
+  a.download='whitestone-3d.png';
+  a.href=renderer.domElement.toDataURL('image/png');
+  a.click();toast('Foto salva — perfeita para enviar ao cliente');
+};
+
+/* ---------- compartilhar (link com posição atual) ---------- */
+$('shareBtn').onclick=async()=>{
+  const u=location.origin+location.pathname+'?lat='+state.lat.toFixed(5)+'&lon='+state.lon.toFixed(5)+
+    '&hora='+state.hour.toFixed(2)+'&nome='+encodeURIComponent($('place').textContent);
+  try{await navigator.clipboard.writeText(u);toast('Link copiado — abra em qualquer navegador');}
+  catch(e){prompt('Copie o link:',u);}
+};
+
+/* ---------- bússola ---------- */
+const _cd=new THREE.Vector3();
+hooks.push(()=>{
+  camera.getWorldDirection(_cd);
+  const head=Math.atan2(_cd.x,-_cd.z);
+  $('cneedle').style.transform='rotate('+(-head*180/Math.PI)+'deg)';
+});
+
+/* ---------- auto-qualidade por FPS ---------- */
+const QORDER=['ultra','alta','media','baixa'];
+let lowT=0;
+hooks.push((dt)=>{
+  if(!state.autoQ||!tiles)return;
+  if(fpsNow<45)lowT+=dt;else lowT=Math.max(0,lowT-dt*2);
+  if(lowT>3.5){
+    lowT=0;
+    const i=QORDER.indexOf(state.quality);
+    if(i<QORDER.length-1){
+      state.quality=QORDER[i+1];
+      tiles.errorTarget=QUAL[state.quality];
+      if($('qual').querySelector('[value="'+state.quality+'"]'))$('qual').value=state.quality;
+      toast('Qualidade ajustada para "'+state.quality+'" para manter a fluidez');
+    }
+  }
+});
+
+/* ---------- onboarding ---------- */
+$('onbOk').onclick=()=>{$('onb').classList.add('hide');localStorage.setItem('ws_onb','1');};
+
+/* ---------- BOOT ---------- */
+(async()=>{
+  const key=await getKey();
+  initTiles(key);
+  applySky();
+  loadImoveis().then(()=>{
+    if(deepImovel){
+      const im=IMOVEIS.find(x=>x.id===deepImovel);
+      if(im)setTimeout(()=>openImovel(im,true),2600);
+    }
+  });
+  fetchWeather();
+  if(!localStorage.getItem('ws_onb'))$('onb').classList.remove('hide');
+  renderer.setAnimationLoop(tick); // XR-ready (VR no stand de vendas)
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# nunca versionar
+ws-config.json
+.env
+.env.*
+node_modules/
+publicar/
+*.log
+.DS_Store

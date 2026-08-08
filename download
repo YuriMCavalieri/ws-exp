@@ -1,0 +1,22 @@
+# segredos — nunca versionar
+ws-config.json
+.env
+.env.*
+*.pem
+*.key
+
+# dependências e build
+node_modules/
+publicar/
+dist/
+.cache/
+
+# assets pesados (ver 06-assets/MANIFESTO-MUNDOS.md)
+*.splat
+*.rad
+*.ply
+
+# sistema
+.DS_Store
+Thumbs.db
+*.log

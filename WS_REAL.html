@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>WS TOUR 360 — White Stone</title>
+<style>
+:root{--onix:#0B0D11;--onix2:#141821;--onix3:#1C212C;--marfim:#F8F6F0;--ouro:#C9A961;--cinza:#8B857A;--verde:#4FA97A;--vermelho:#C96161;--linha:#232936}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--onix);color:var(--marfim);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+#app{display:flex;height:100%;width:100%}
+
+/* ---------- painel ---------- */
+#lado{width:330px;flex:0 0 330px;background:var(--onix2);border-right:1px solid #232936;
+  display:flex;flex-direction:column;z-index:5;transition:margin-left .25s ease}
+#lado.oculto{margin-left:-330px}
+#marca{padding:18px 20px 14px;border-bottom:1px solid #232936}
+#marca .n{font-family:Georgia,serif;font-size:13px;letter-spacing:.34em;color:var(--ouro)}
+#marca .s{font-size:10.5px;letter-spacing:.16em;color:var(--cinza);margin-top:6px;text-transform:uppercase}
+#abas{display:flex;border-bottom:1px solid #232936}
+#abas button{flex:1;padding:13px 8px;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--cinza);border-bottom:2px solid transparent;transition:.18s}
+#abas button:hover{color:var(--marfim)}
+#abas button.on{color:var(--ouro);border-bottom-color:var(--ouro);background:#181d27}
+#corpo{flex:1;overflow-y:auto;overflow-x:hidden;padding:18px 20px 28px}
+#corpo::-webkit-scrollbar{width:7px}#corpo::-webkit-scrollbar-thumb{background:#2b3242;border-radius:4px}
+.sec{margin-bottom:22px}
+.sec h4{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cinza);margin-bottom:10px;
+  display:flex;align-items:center;gap:8px}
+.sec h4:after{content:"";flex:1;height:1px;background:#232936}
+.hint{font-size:11.5px;line-height:1.55;color:#9a958c}
+.hint b{color:var(--marfim);font-weight:600}
+.drop{border:1px dashed #39414f;border-radius:10px;padding:20px 14px;text-align:center;
+  cursor:pointer;transition:.18s;background:#10141c}
+.drop:hover,.drop.hot{border-color:var(--ouro);background:#181d27}
+.drop .t{font-size:12.5px;color:var(--marfim);margin-bottom:5px}
+.drop .u{font-size:10.5px;color:var(--cinza);line-height:1.5}
+.bt{display:block;width:100%;padding:11px;border-radius:8px;background:#222939;font-size:11.5px;
+  letter-spacing:.05em;transition:.18s;text-align:center;margin-top:8px}
+.bt:hover{background:#2c3549}
+.bt.ouro{background:linear-gradient(135deg,#C9A961,#a8873f);color:#14100a;font-weight:600}
+.bt.ouro:hover{filter:brightness(1.09)}
+.bt.mini{padding:8px;font-size:10.5px}
+.lin{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:11.5px}
+.lin label{flex:0 0 96px;color:var(--cinza);font-size:10.5px;letter-spacing:.04em}
+.lin input[type=range]{flex:1;accent-color:var(--ouro);background:transparent}
+.lin .v{flex:0 0 46px;text-align:right;color:var(--ouro);font-variant-numeric:tabular-nums;font-size:11px}
+.lin select,.lin input[type=text]{flex:1;background:#10141c;border:1px solid #2b3242;border-radius:6px;
+  padding:7px 9px;font-size:11.5px}
+.est{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:#10141c;
+  border:1px solid #232936;margin-bottom:7px;cursor:pointer;transition:.15s}
+.est:hover{border-color:#3a4354}
+.est.on{border-color:var(--ouro);background:#191d26}
+.est .mini{width:44px;height:26px;border-radius:4px;object-fit:cover;flex:0 0 44px;background:#000}
+.est .nm{flex:1;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.est .x{color:#5c6474;font-size:15px;line-height:1;padding:2px 4px}
+.est .x:hover{color:var(--vermelho)}
+.stat{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid #1c212c}
+.stat span:first-child{color:var(--cinza)}
+.stat span:last-child{color:var(--marfim);font-variant-numeric:tabular-nums}
+.aviso{border-left:2px solid var(--ouro);padding:9px 0 9px 11px;font-size:11px;line-height:1.55;color:#a8a299;margin-top:10px}
+.aviso.err{border-color:var(--vermelho)}
+
+/* ---------- visor ---------- */
+#visor{flex:1;position:relative;background:#05070a}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+#hud{position:absolute;left:0;right:0;bottom:0;padding:12px 16px;display:flex;gap:14px;align-items:center;
+  font-size:10.5px;letter-spacing:.08em;color:#7d8697;pointer-events:none}
+#hud .p{background:rgba(11,13,17,.72);backdrop-filter:blur(8px);border:1px solid #222936;
+  border-radius:7px;padding:6px 11px;font-variant-numeric:tabular-nums}
+#topo{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;gap:9px;align-items:center;z-index:3}
+#topo .cap{flex:1;font-family:Georgia,serif;font-size:14px;color:var(--marfim);text-shadow:0 2px 14px #000}
+.tb{background:rgba(11,13,17,.72);backdrop-filter:blur(8px);border:1px solid #222936;border-radius:8px;
+  padding:8px 13px;font-size:11px;letter-spacing:.05em;transition:.18s}
+.tb:hover{border-color:var(--ouro);color:var(--ouro)}
+.tb.on{border-color:var(--ouro);color:var(--ouro);background:rgba(201,169,97,.1)}
+#vazio{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;text-align:center;padding:40px;pointer-events:none}
+#vazio .g{font-family:Georgia,serif;font-size:26px;color:#2f3644;letter-spacing:.06em}
+#vazio .p{font-size:12.5px;color:#4a5262;max-width:420px;line-height:1.7}
+.hot{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;
+  border:1.5px solid rgba(248,246,240,.8);background:rgba(201,169,97,.18);backdrop-filter:blur(3px);
+  cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:center;z-index:2}
+.hot:after{content:"";width:8px;height:8px;border-radius:50%;background:var(--marfim)}
+.hot:hover{transform:scale(1.22);border-color:var(--ouro);background:rgba(201,169,97,.42)}
+.pin{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+  border:1.5px solid var(--ouro);background:rgba(11,13,17,.72);backdrop-filter:blur(4px);
+  cursor:pointer;transition:.18s;display:flex;align-items:center;justify-content:center;z-index:2}
+.pin:after{content:"";width:7px;height:7px;border-radius:50%;background:var(--ouro)}
+.pin:hover{transform:scale(1.25);background:rgba(201,169,97,.34)}
+.pin.novo{animation:pulsa 1.5s ease 2}
+@keyframes pulsa{0%,100%{box-shadow:0 0 0 0 rgba(201,169,97,.55)}50%{box-shadow:0 0 0 13px rgba(201,169,97,0)}}
+.acao{display:flex;align-items:center;gap:12px;width:100%;padding:12px 13px;border-radius:11px;
+  border:1px solid #2b3242;background:#10141c;margin-bottom:8px;text-align:left;transition:.16s}
+.acao:hover{border-color:#3d4657;background:#151a24}
+.acao.on{border-color:var(--ouro);background:rgba(201,169,97,.08)}
+.acao .sim{width:30px;height:30px;flex:0 0 30px;border-radius:50%;border:1.5px solid #3d4657;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:#7d8697;transition:.16s}
+.acao.on .sim{border-color:var(--ouro);color:var(--ouro);background:rgba(201,169,97,.14)}
+.acao .tt{flex:1;min-width:0}
+.acao .tt b{display:block;font-size:12.5px;font-weight:600}
+.acao .tt small{display:block;font-size:10.5px;color:var(--cinza);margin-top:3px;line-height:1.45}
+.acao .st{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ouro);white-space:nowrap}
+.reg{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;background:#10141c;
+  border:1px solid var(--linha);margin-bottom:6px}
+.reg .n{width:19px;height:19px;flex:0 0 19px;border-radius:50%;background:#1c212c;color:var(--ouro);
+  font-size:9.5px;display:flex;align-items:center;justify-content:center}
+.reg select,.reg input{flex:1;min-width:0;background:#0a0d13;border:1px solid #2b3242;
+  border-radius:6px;padding:6px 8px;font-size:11px}
+.reg input.pr{flex:0 0 74px}
+.reg .del{color:#5c6474;font-size:14px;line-height:1;padding:4px 6px;border-radius:5px;flex:0 0 auto}
+.reg .del:hover{color:var(--vermelho);background:rgba(201,97,97,.12)}
+.reg .ir{color:#5c6474;font-size:11px;padding:4px 6px;border-radius:5px;flex:0 0 auto}
+.reg .ir:hover{color:var(--ouro)}
+#colocar{position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:6;display:none;
+  align-items:center;gap:13px;background:rgba(201,169,97,.95);color:#14100a;border-radius:11px;
+  padding:10px 12px 10px 15px;font-size:12px;font-weight:600;box-shadow:0 12px 34px rgba(0,0,0,.5)}
+#colocar.on{display:flex;animation:desce .26s ease}
+@keyframes desce{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
+#colocar button{background:rgba(20,16,10,.17);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600}
+#colocar button:hover{background:rgba(20,16,10,.32)}
+body.colocando #cv{cursor:crosshair}
+#mcard{position:absolute;width:230px;background:rgba(11,13,17,.9);backdrop-filter:blur(14px);
+  border:1px solid var(--linha);border-radius:13px;padding:14px 15px;z-index:4;display:none;
+  box-shadow:0 14px 40px rgba(0,0,0,.55)}
+#mcard .x{position:absolute;top:7px;right:9px;color:#5c6474;font-size:15px;line-height:1}
+#mcard .x:hover{color:var(--marfim)}
+#mcard .nm{font-family:Georgia,serif;font-size:14px;padding-right:14px;line-height:1.3}
+#mcard .lj{font-size:10px;color:var(--cinza);margin-top:3px}
+#mcard .pz{font-family:Georgia,serif;font-size:20px;color:var(--ouro);margin:9px 0 2px}
+#mcard .dm{font-size:10px;color:var(--cinza);margin-bottom:10px}
+#mcard .cta{display:block;width:100%;padding:9px;border-radius:8px;font-size:11px;
+  background:linear-gradient(135deg,#C9A961,#a8873f);color:#14100a;font-weight:600;margin-top:8px}
+#mcard .cta:hover{filter:brightness(1.09)}
+.est .qt{color:var(--cinza);font-size:9.5px;letter-spacing:.06em;white-space:nowrap}
+body.visitante #lado,body.visitante #puxar{display:none}
+#ajuda{position:absolute;right:16px;bottom:16px;max-width:250px;background:rgba(11,13,17,.82);
+  backdrop-filter:blur(10px);border:1px solid var(--linha);border-radius:11px;padding:13px 15px;
+  font-size:10.5px;line-height:1.75;color:#8f98a8;z-index:3;display:none}
+#ajuda b{color:var(--marfim)}
+#fade{position:absolute;inset:0;background:#05070a;opacity:0;pointer-events:none;transition:opacity .34s ease}
+#carregando{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;background:rgba(5,7,10,.9);z-index:6}
+#carregando .b{width:210px;height:2px;background:#232936;border-radius:2px;overflow:hidden}
+#carregando .b i{display:block;height:100%;width:0;background:var(--ouro);transition:width .2s}
+#carregando .t{font-size:11.5px;letter-spacing:.1em;color:var(--cinza)}
+#puxar{position:absolute;left:0;top:50%;transform:translateY(-50%);width:16px;height:64px;
+  background:var(--onix2);border:1px solid #232936;border-left:none;border-radius:0 8px 8px 0;
+  display:flex;align-items:center;justify-content:center;color:var(--cinza);font-size:11px;z-index:4}
+#puxar:hover{color:var(--ouro)}
+#diag{position:fixed;inset:0;background:var(--onix);z-index:99;display:none;padding:44px;overflow:auto}
+#diag h3{font-family:Georgia,serif;color:var(--ouro);margin-bottom:14px}
+#diag pre{background:#10141c;border:1px solid #232936;border-radius:8px;padding:16px;
+  font-size:11.5px;line-height:1.6;white-space:pre-wrap;color:#a8a299}
+@media(max-width:820px){#lado{position:absolute;height:100%;box-shadow:0 0 40px rgba(0,0,0,.6)}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="lado">
+    <div id="marca">
+      <div class="n">WHITE STONE</div>
+      <div class="s">Tour 360 · captura</div>
+    </div>
+    <nav id="abas">
+      <button data-aba="pano" class="on">Tour 360</button>
+      <button data-aba="splat">Gaussian Splat</button>
+    </nav>
+    <div id="corpo"></div>
+  </aside>
+
+  <main id="visor">
+    <canvas id="cv"></canvas>
+    <div id="vazio">
+      <div class="g">TOUR 360</div>
+      <div class="p">Aqui o imóvel deixa de ser desenhado e passa a ser <b>capturado</b>.
+        Escolha um modo no painel e carregue o material.</div>
+    </div>
+    <div id="topo">
+      <div class="cap" id="cap"></div>
+      <button class="tb" id="btAuto">Órbita</button>
+      <button class="tb" id="btFoto">Foto</button>
+      <button class="tb" id="btTela">Tela cheia</button>
+      <button class="tb" id="btVisita">Visitante</button>
+      <button class="tb" id="btAjuda">?</button>
+      <button class="tb" id="btVoltar" style="display:none">Voltar ao mundo</button>
+    </div>
+    <div id="hud">
+      <div class="p" id="hFps">—</div>
+      <div class="p" id="hInfo">—</div>
+    </div>
+    <div id="colocar"><span id="colocarT"></span><button id="colocarX">Cancelar · Esc</button></div>
+    <div id="mcard"></div>
+    <div id="ajuda">
+      <b>arrastar</b> gira · <b>roda</b> aproxima<br>
+      <b>W A S D</b> caminha · <b>Q E</b> sobe e desce<br>
+      <b>Shift</b> corre · <b>C</b> agacha · <b>B</b> conforto<br>
+      <b>setas ← →</b> troca estação<br>
+      <b>V</b> modo visitante · <b>F</b> tela cheia · <b>P</b> render<br>
+      <b>Esc</b> fecha o card
+    </div>
+    <div id="fade"></div>
+    <div id="carregando"><div class="t" id="cgT">processando</div><div class="b"><i id="cgB"></i></div></div>
+    <button id="puxar">‹</button>
+  </main>
+</div>
+
+<div id="diag"><h3>O Tour 360 não conseguiu iniciar</h3><pre id="diagT"></pre></div>
+
+<input type="file" id="fPano" accept="image/*" multiple style="display:none">
+<input type="file" id="fSplat" accept=".splat,.ply,.ksplat" style="display:none">
+<input type="file" id="fDepth" accept="image/*" style="display:none">
+
+<script>
+/* sentinela de boot — se o módulo não subir em 9s, mostra diagnóstico legível */
+window.__WS_ERR=[];
+window.addEventListener('error',e=>{window.__WS_ERR.push((e.message||'erro')+' @ '+(e.filename||'').split('/').pop()+':'+(e.lineno||'?'))});
+window.addEventListener('unhandledrejection',e=>{window.__WS_ERR.push('promise: '+(e.reason&&e.reason.message||e.reason))});
+setTimeout(function(){
+  if(window.__WS_OK) return;
+  var d=document.getElementById('diag');d.style.display='block';
+  document.getElementById('diagT').textContent=
+    'O módulo 3D não sinalizou inicialização em 9 segundos.\n\n'+
+    'Causas prováveis, em ordem:\n'+
+    '  1. Sem internet — a biblioteca Three.js vem de unpkg.com.\n'+
+    '  2. Firewall corporativo bloqueando unpkg.com.\n'+
+    '  3. WebGL2 desativado no navegador (teste em about:gpu).\n\n'+
+    'Erros capturados:\n'+(window.__WS_ERR.length?window.__WS_ERR.join('\n'):'  (nenhum)');
+},9000);
+</script>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.170.0/build/three.module.js",
+"three/addons/":"https://unpkg.com/three@0.170.0/examples/jsm/"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================================
+   WS TOUR 360
+   Dois motores independentes que compartilham câmera, visor e ponte postMessage:
+     · PANO  — tour fotográfico 360 (equirretangular). Funciona hoje, com fotos.
+     · SPLAT — renderizador de 3D Gaussian Splatting (.splat / .ply / .ksplat).
+   Nenhum dos dois desenha geometria: os dois exibem realidade capturada.
+   ========================================================================== */
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const cv=$('#cv'), visor=$('#visor'), corpo=$('#corpo');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ---------- renderer / cena ---------- */
+let renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:false,alpha:false,
+    powerPreference:'high-performance',premultipliedAlpha:false});
+}catch(e){ throw new Error('WebGL indisponível: '+e.message); }
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+renderer.setClearColor(0x05070a,1);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
+
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(62,1,0.05,900);
+cam.position.set(0,1.6,0);
+
+const gPano=new THREE.Group(); scene.add(gPano);
+const gSplat=new THREE.Group(); scene.add(gSplat);
+
+/* ---------- controle de câmera (olhar + orbitar) ---------- */
+const ctl={yaw:0,pitch:0,dist:4,alvo:new THREE.Vector3(0,1.2,0),orbita:false,
+  arrast:false,px:0,py:0,vy:0,vp:0,auto:false};
+function aplicarCam(){
+  ctl.pitch=clamp(ctl.pitch,-1.45,1.45);
+  if(ctl.orbita){
+    const d=ctl.dist, cp=Math.cos(ctl.pitch);
+    cam.position.set(ctl.alvo.x+d*cp*Math.sin(ctl.yaw), ctl.alvo.y+d*Math.sin(ctl.pitch),
+                     ctl.alvo.z+d*cp*Math.cos(ctl.yaw));
+    cam.lookAt(ctl.alvo);
+  }else{
+    const q=new THREE.Quaternion().setFromEuler(new THREE.Euler(ctl.pitch,ctl.yaw,0,'YXZ'));
+    cam.quaternion.copy(q);
+  }
+}
+cv.addEventListener('pointerdown',e=>{ctl.arrast=true;ctl.px=e.clientX;ctl.py=e.clientY;
+  cv.setPointerCapture(e.pointerId);ctl.auto=false;});
+cv.addEventListener('pointermove',e=>{
+  if(!ctl.arrast)return;
+  const dx=e.clientX-ctl.px, dy=e.clientY-ctl.py; ctl.px=e.clientX; ctl.py=e.clientY;
+  const s=0.0032*(cam.fov/62);
+  ctl.vy += -dx*s; ctl.vp += (ctl.orbita? dy*s : -dy*s);
+});
+addEventListener('pointerup',()=>ctl.arrast=false);
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(ctl.orbita) ctl.dist=clamp(ctl.dist*(1+Math.sign(e.deltaY)*0.11),0.4,120);
+  else cam.fov=clamp(cam.fov+Math.sign(e.deltaY)*3,26,96), cam.updateProjectionMatrix();
+},{passive:false});
+/* toque: dois dedos = zoom */
+let pinch=0;
+cv.addEventListener('touchmove',e=>{
+  if(e.touches.length!==2)return; e.preventDefault();
+  const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+  if(pinch){ const r=d/pinch;
+    if(ctl.orbita) ctl.dist=clamp(ctl.dist/r,0.4,120);
+    else cam.fov=clamp(cam.fov/r,26,96), cam.updateProjectionMatrix(); }
+  pinch=d;
+},{passive:false});
+cv.addEventListener('touchend',()=>pinch=0);
+
+/* estado da caminhada — velocidade, balanço de passo e conforto */
+const ANDAR={vel:new THREE.Vector3(),fase:0,bob:0,lat:0,olho:0,fovBase:62,
+  conforto:matchMedia('(prefers-reduced-motion: reduce)').matches};
+
+/* teclado para caminhar dentro do splat */
+const tecla={};
+addEventListener('keydown',e=>{tecla[e.code]=true; if(e.code==='Space')e.preventDefault();});
+addEventListener('keyup',e=>tecla[e.code]=false);
+
+function redim(){
+  const w=visor.clientWidth,h=visor.clientHeight;
+  renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix();
+  if(SPLAT.mat) SPLAT.mat.uniforms.uViewport.value.set(w*renderer.getPixelRatio(),h*renderer.getPixelRatio());
+}
+addEventListener('resize',redim);
+
+/* ============================================================================
+   MOTOR 1 — TOUR 360 FOTOGRÁFICO
+   Cada foto equirretangular vira uma "estação". A navegação entre estações é
+   feita por pontos de passagem que o autor coloca clicando na cena.
+   ========================================================================== */
+const PANO={estacoes:[],atual:-1,malhaA:null,malhaB:null,editando:null,norte:0,
+  modo:'esfera', sala:{L:4.4,P:4.4,H:2.75,hc:1.55}, prof:{min:1.2,max:9.0},
+  visitante:false, auto:false, tAuto:0, tEstacao:0, atencao:{}, grade:true};
+const CART=[];
+
+/* ---- superfícies de projeção -------------------------------------------
+   esfera  · a panorâmica clássica: sem paralaxe, câmera presa no ponto
+   caixa   · projeta a panorâmica num volume de ambiente → paralaxe real
+   malha   · usa um mapa de profundidade para virar geometria de verdade
+   ---------------------------------------------------------------------- */
+function esferaPano(){
+  const g=new THREE.SphereGeometry(60,64,40); g.scale(-1,1,1);
+  const m=new THREE.MeshBasicMaterial({transparent:true,opacity:1,depthWrite:false});
+  const mesh=new THREE.Mesh(g,m); mesh.renderOrder=-10; gPano.add(mesh); return mesh;
+}
+function panoInit(){
+  if(!PANO.malhaA){ PANO.malhaA=esferaPano(); PANO.malhaB=esferaPano();
+    PANO.malhaB.material.opacity=0; }
+}
+
+const VS_SALA=`
+varying vec3 vDir;
+void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
+const FS_SALA=`
+uniform sampler2D uTex; uniform float uYaw; uniform float uFade;
+varying vec3 vDir;
+void main(){
+  vec3 d=normalize(vDir);
+  float u=fract(atan(d.z,d.x)/6.283185307 + uYaw);
+  /* a esfera do Three tem uv.y=1 no topo (uvs.push(u, 1-v)); sem esta inversão
+     a panorâmica sai de cabeça para baixo no modo caminhar */
+  float v=1.0-acos(clamp(d.y,-1.0,1.0))/3.141592653;
+  gl_FragColor=vec4(texture2D(uTex,vec2(u,v)).rgb, uFade);
+  #include <colorspace_fragment>
+}`;
+
+let salaMesh=null, gradeMesh=null;
+function limparGrade(){
+  if(gradeMesh){ gPano.remove(gradeMesh); gradeMesh.geometry.dispose();
+    gradeMesh.material.dispose(); gradeMesh=null; }
+}
+function construirSala(){
+  if(salaMesh){ gPano.remove(salaMesh); salaMesh.geometry.dispose(); salaMesh.material.dispose(); salaMesh=null; }
+  limparGrade();
+  const est=PANO.estacoes[PANO.atual]; if(!est) return;
+  const {L,P,H,hc}=PANO.sala;
+  const g=new THREE.BoxGeometry(L,H,P,24,18,24);
+  g.translate(0,H/2-hc,0);           /* origem da captura na altura dos olhos */
+  const m=new THREE.ShaderMaterial({
+    uniforms:{uTex:{value:est.tex},uYaw:{value:PANO.norte/360},uFade:{value:1}},
+    vertexShader:VS_SALA, fragmentShader:FS_SALA,
+    side:THREE.BackSide, transparent:true, depthWrite:false});
+  salaMesh=new THREE.Mesh(g,m); salaMesh.renderOrder=-10; gPano.add(salaMesh);
+  /* arestas do volume: mostram o que os controles estão movendo */
+  gradeMesh=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(L,H,P)),
+    new THREE.LineBasicMaterial({color:0xC9A961,transparent:true,opacity:.34,depthTest:false}));
+  gradeMesh.position.y=H/2-hc; gradeMesh.renderOrder=10;
+  gradeMesh.visible=PANO.grade; gPano.add(gradeMesh);
+}
+function construirMalha(){
+  if(salaMesh){ gPano.remove(salaMesh); salaMesh.geometry.dispose();
+    if(salaMesh.material.dispose)salaMesh.material.dispose(); salaMesh=null; }
+  limparGrade();
+  const est=PANO.estacoes[PANO.atual];
+  if(!est||!est.depth){ PANO.modo='caixa'; construirSala(); return; }
+  const W=192,Hh=96;
+  const g=new THREE.SphereGeometry(1,W,Hh);
+  const pos=g.attributes.position, uv=g.attributes.uv;
+  const {min:dmin,max:dmax}=PANO.prof;
+  const d=est.depth;                                   /* {w,h,dados:Uint8ClampedArray} */
+  for(let i=0;i<pos.count;i++){
+    const u=uv.getX(i), v=uv.getY(i);
+    /* a esfera do Three tem v=0 no polo sul; a equirretangular tem v=0 no topo */
+    const px=Math.min(d.w-1,Math.max(0,Math.round(u*(d.w-1))));
+    const py=Math.min(d.h-1,Math.max(0,Math.round((1-v)*(d.h-1))));
+    const g8=d.dados[(py*d.w+px)*4]/255;               /* branco = perto */
+    const dist=dmin+(1-g8)*(dmax-dmin);
+    pos.setXYZ(i,pos.getX(i)*dist,pos.getY(i)*dist,pos.getZ(i)*dist);
+  }
+  pos.needsUpdate=true; g.computeVertexNormals(); g.scale(-1,1,1);
+  const m=new THREE.MeshBasicMaterial({map:est.tex,transparent:true,depthWrite:false});
+  salaMesh=new THREE.Mesh(g,m); salaMesh.renderOrder=-10;
+  salaMesh.rotation.y=PANO.norte*Math.PI/180; gPano.add(salaMesh);
+}
+function panoAplicarModo(){
+  const esf=(PANO.modo==='esfera');
+  if(PANO.malhaA) PANO.malhaA.visible=esf;
+  if(PANO.malhaB) PANO.malhaB.visible=esf;
+  if(esf){ if(salaMesh) salaMesh.visible=false; if(gradeMesh) gradeMesh.visible=false;
+    cam.position.set(0,0,0); }
+  else{
+    if(PANO.modo==='malha') construirMalha(); else construirSala();
+    if(salaMesh) salaMesh.visible=true;
+    cam.position.set(0,0,0);
+  }
+  ctl.orbita=false;
+}
+function limiteSala(){
+  if(PANO.modo==='esfera'){ cam.position.set(0,0,0); return; }
+  const {L,P,H,hc}=PANO.sala, folga=0.45;
+  cam.position.x=clamp(cam.position.x,-L/2+folga,L/2-folga);
+  cam.position.z=clamp(cam.position.z,-P/2+folga,P/2-folga);
+  cam.position.y=clamp(cam.position.y,-hc+0.5,H-hc-0.25);
+}
+
+/* ---- estações ---------------------------------------------------------- */
+async function panoAddArquivos(files){
+  panoInit();
+  for(const f of files){
+    if(!f.type.startsWith('image/')) continue;
+    const url=URL.createObjectURL(f);
+    let tex;
+    try{ tex=await new Promise((res,rej)=>new THREE.TextureLoader().load(url,res,null,rej)); }
+    catch(e){ aviso('Não consegui abrir "'+f.name+'".',true); continue; }
+    tex.colorSpace=THREE.SRGBColorSpace; tex.minFilter=THREE.LinearFilter;
+    tex.generateMipmaps=false; tex.wrapS=THREE.RepeatWrapping;
+    const prop=tex.image.width/tex.image.height;
+    let thumb='';
+    try{ const c=document.createElement('canvas'); c.width=88; c.height=44;
+      c.getContext('2d').drawImage(tex.image,0,0,88,44);
+      thumb=c.toDataURL('image/jpeg',0.62); }catch(err){}
+    PANO.estacoes.push({id:'e'+Math.random().toString(36).slice(2,8),
+      nome:f.name.replace(/\.[^.]+$/,''), tex, url, thumb, hots:[], pinos:[], depth:null,
+      eq:Math.abs(prop-2)<0.15, w:tex.image.width, h:tex.image.height});
+  }
+  if(PANO.atual<0 && PANO.estacoes.length) panoIr(0,false);
+  painel();
+}
+async function panoAddDepth(file){
+  const est=PANO.estacoes[PANO.atual];
+  if(!est){ aviso('Escolha primeiro a estação que vai receber o mapa.',true); return; }
+  const img=await new Promise((res,rej)=>{ const i=new Image();
+    i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(file); });
+  const w=Math.min(1024,img.width), h=Math.round(w*img.height/img.width);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const cx=c.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(img,0,0,w,h);
+  est.depth={w,h,dados:cx.getImageData(0,0,w,h).data};
+  PANO.modo='malha'; panoAplicarModo();
+  aviso('Mapa de profundidade aplicado a "'+est.nome+'". Ajuste perto e longe até as paredes ficarem retas.');
+  painel();
+}
+function panoIr(i,transicao=true){
+  if(i<0||i>=PANO.estacoes.length)return;
+  panoInit();
+  if(PANO.atual>=0){                                   /* telemetria de atenção */
+    const ant=PANO.estacoes[PANO.atual];
+    if(ant) PANO.atencao[ant.nome]=(PANO.atencao[ant.nome]||0)+(performance.now()-PANO.tEstacao)/1000;
+  }
+  PANO.tEstacao=performance.now();
+  const est=PANO.estacoes[i];
+  const alvo = PANO.malhaA.material.opacity>0.5 ? PANO.malhaB : PANO.malhaA;
+  const saindo= alvo===PANO.malhaA ? PANO.malhaB : PANO.malhaA;
+  alvo.material.map=est.tex; alvo.material.needsUpdate=true;
+  alvo.rotation.y=PANO.norte*Math.PI/180;
+  if(!transicao){ alvo.material.opacity=1; saindo.material.opacity=0; }
+  else{
+    const t0=performance.now(), fovBase=cam.fov;
+    (function fx(){ const k=clamp((performance.now()-t0)/460,0,1);
+      const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;      /* easing suave */
+      alvo.material.opacity=e; saindo.material.opacity=1-e;
+      cam.fov=fovBase-6*Math.sin(e*Math.PI);            /* leve avanço, sensação de passo */
+      cam.updateProjectionMatrix();
+      if(k<1) requestAnimationFrame(fx); else {cam.fov=fovBase;cam.updateProjectionMatrix();}
+    })();
+  }
+  PANO.atual=i; $('#cap').textContent=est.nome;
+  panoAplicarModo();
+  pinosRender(); painel();
+  if(!est.eq) aviso('"'+est.nome+'" não parece 360° (proporção '+(est.w/est.h).toFixed(2)+
+    ':1, o esperado é 2:1). Vai aparecer distorcida.');
+}
+function panoRemover(i){
+  const e=PANO.estacoes[i]; if(e){ e.tex.dispose(); URL.revokeObjectURL(e.url); }
+  PANO.estacoes.splice(i,1);
+  PANO.estacoes.forEach(s=>s.hots=s.hots.filter(h=>h.destino!==e.id));
+  if(PANO.atual>=PANO.estacoes.length) PANO.atual=PANO.estacoes.length-1;
+  if(PANO.atual>=0) panoIr(PANO.atual,false);
+  else { if(PANO.malhaA){PANO.malhaA.material.opacity=0;PANO.malhaB.material.opacity=0;}
+    if(salaMesh) salaMesh.visible=false; $('#cap').textContent=''; }
+  pinosRender(); painel();
+}
+
+/* ---- pontos: passagem e móvel ------------------------------------------ */
+let movelPendente=null;                                 /* peça vinda do Atelier */
+const raycaster=new THREE.Raycaster();
+cv.addEventListener('click',e=>{
+  if(MODO!=='pano'||PANO.atual<0) return;
+  if(!PANO.editando && !movelPendente) return;
+  const r=cv.getBoundingClientRect();
+  const nd=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  raycaster.setFromCamera(nd,cam);
+  const d=raycaster.ray.direction;
+  const yaw=Math.atan2(d.x,d.z), pitch=Math.asin(clamp(d.y,-1,1));
+  const est=PANO.estacoes[PANO.atual];
+  if(movelPendente){
+    est.pinos.push({yaw,pitch,movel:movelPendente,novo:true});
+    aviso('"'+movelPendente.nome+'" fixado. Clique no pino para ver o card.');
+    movelPendente=null; modoColocar(null);
+  } else if(PANO.editando==='passagem'){
+    const outras=PANO.estacoes.filter((_,i)=>i!==PANO.atual);
+    if(!outras.length){ aviso('Adicione outra estação antes de criar uma passagem.',true);
+      modoColocar(null); return; }
+    est.hots.push({yaw,pitch,destino:outras[0].id,novo:true});
+    aviso('Passagem criada. Escolha o destino na lista ao lado.');
+  } else if(PANO.editando==='movel'){
+    est.pinos.push({yaw,pitch,novo:true,movel:{nome:'Móvel sem nome',preco:0,sku:'p'+Date.now().toString(36),
+      loja:'',dimensoes:{largura:0,altura:0,profundidade:0}}});
+    aviso('Pino criado. Dê nome e preço na lista ao lado.');
+  }
+  pinosRender(); painel();
+});
+
+/* faixa de instrução no alto do visor enquanto se posiciona um ponto */
+function modoColocar(tipo){
+  PANO.editando = tipo;
+  const b=$('#colocar');
+  document.body.classList.toggle('colocando', !!tipo || !!movelPendente);
+  if(!tipo && !movelPendente){ b.classList.remove('on'); return; }
+  $('#colocarT').textContent = movelPendente
+    ? 'Clique na cena para posicionar “'+movelPendente.nome+'”'
+    : tipo==='passagem'
+      ? 'Clique na cena onde fica a passagem para outro ambiente'
+      : 'Clique na cena sobre o móvel que você quer vender';
+  b.classList.add('on');
+}
+$('#colocarX').onclick=()=>{ movelPendente=null; modoColocar(null); painel(); };
+
+function pinosRender(){
+  $$('.hot,.pin').forEach(n=>n.remove());
+  fecharCard();
+  if(MODO!=='pano'||PANO.atual<0) return;
+  const est=PANO.estacoes[PANO.atual];
+  est.hots.forEach((h,i)=>{
+    const n=document.createElement('div'); n.className='hot'+(h.novo?' novo':'');
+    const alvo=PANO.estacoes.find(e=>e.id===h.destino);
+    n.title='ir para '+((alvo||{}).nome||'escolha o destino');
+    n.onclick=ev=>{ ev.stopPropagation();
+      const j=PANO.estacoes.findIndex(e=>e.id===h.destino); if(j>=0) panoIr(j); };
+    visor.appendChild(n); h.novo=false;
+  });
+  est.pinos.forEach((p,i)=>{
+    const n=document.createElement('div'); n.className='pin'+(p.novo?' novo':'');
+    n.title=p.movel.nome;
+    n.onclick=ev=>{ ev.stopPropagation(); abrirCard(i); };
+    visor.appendChild(n); p.novo=false;
+  });
+}
+function dirDe(p){
+  return new THREE.Vector3(Math.cos(p.pitch)*Math.sin(p.yaw),Math.sin(p.pitch),
+    Math.cos(p.pitch)*Math.cos(p.yaw));
+}
+function pinosPos(){
+  if(MODO!=='pano'||PANO.atual<0) return;
+  const est=PANO.estacoes[PANO.atual], r=cv.getBoundingClientRect();
+  const põe=(n,ponto)=>{
+    const v=dirDe(ponto).multiplyScalar(9).add(cam.position).project(cam);
+    if(v.z>1){ n.style.display='none'; return null; }
+    n.style.display='flex';
+    const x=(v.x*0.5+0.5)*r.width, y=(-v.y*0.5+0.5)*r.height;
+    n.style.left=x+'px'; n.style.top=y+'px'; return {x,y};
+  };
+  $$('.hot').forEach((n,i)=>{ const h=est.hots[i]; if(h) põe(n,h); else n.style.display='none'; });
+  $$('.pin').forEach((n,i)=>{ const p=est.pinos[i]; if(!p){n.style.display='none';return;}
+    const xy=põe(n,p);
+    if(cardAberto===i && xy){ const c=$('#mcard');
+      c.style.left=clamp(xy.x+22,10,r.width-250)+'px';
+      c.style.top =clamp(xy.y-28,10,r.height-140)+'px'; }
+  });
+}
+let cardAberto=null;
+function abrirCard(i){
+  cardAberto=i;
+  const p=PANO.estacoes[PANO.atual].pinos[i]; const m=p.movel;
+  const dim=m.dimensoes||{};
+  const c=$('#mcard'); c.style.display='block';
+  c.innerHTML=`<button class="x" id="cardX">×</button>
+    <div class="nm">${m.nome}</div>
+    ${m.loja?`<div class="lj">${m.loja}</div>`:''}
+    <div class="pz">${m.preco?m.preco.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'sob consulta'}</div>
+    ${dim.largura?`<div class="dm">${(+dim.largura).toFixed(2)} × ${(+dim.altura).toFixed(2)} × ${(+dim.profundidade).toFixed(2)} m</div>`:''}
+    <button class="cta" id="cardAdd">${CART.find(x=>x.sku===m.sku)?'no carrinho ✓':'Adicionar ao carrinho'}</button>`;
+  $('#cardX').onclick=fecharCard;
+  $('#cardAdd').onclick=()=>{
+    if(!CART.find(x=>x.sku===m.sku)) CART.push({sku:m.sku,nome:m.nome,preco:m.preco||0});
+    $('#cardAdd').textContent='no carrinho ✓'; painel();
+    try{ parent.postMessage({tipo:'ws:carrinho',itens:CART},'*'); }catch(e){}
+  };
+}
+function fecharCard(){ cardAberto=null; const c=$('#mcard'); if(c) c.style.display='none'; }
+
+/* ---- passeio automático entre estações ---- */
+function autoTour(dt){
+  if(!PANO.auto||PANO.estacoes.length<2) return;
+  ctl.yaw+=dt*0.16;
+  PANO.tAuto+=dt;
+  if(PANO.tAuto>7){ PANO.tAuto=0; panoIr((PANO.atual+1)%PANO.estacoes.length); }
+}
+
+/* ============================================================================
+   MOTOR 2 — GAUSSIAN SPLATTING
+   Cada gaussiana é um elipsoide 3D com cor e opacidade. Projetamos a
+   covariância 3D para 2D (EWA splatting) e desenhamos um quad orientado.
+   Os dados vivem numa textura float; a ordenação por profundidade só reescreve
+   um índice por instância, o que mantém o custo do sort baixo.
+   ========================================================================== */
+const SPLAT={n:0,dados:null,mesh:null,mat:null,tex:null,idxAttr:null,
+  ordem:null,prof:null,ultCam:new THREE.Vector3(9e9,0,0),ultDir:new THREE.Vector3(),
+  tOrd:0,escala:1,exposicao:1};
+
+const VERT=/* glsl */`
+precision highp float;
+attribute float sIndex;
+uniform sampler2D uDados;
+uniform vec2 uTexSize;
+uniform vec2 uViewport;
+uniform vec2 uFocal;
+uniform float uEscala;
+varying vec4 vCor;
+varying vec2 vQ;
+vec4 leia(float k){
+  float x=mod(k,uTexSize.x), y=floor(k/uTexSize.x);
+  return texture2D(uDados,(vec2(x,y)+0.5)/uTexSize);
+}
+void main(){
+  float b=sIndex*4.0;
+  vec4 t0=leia(b), t1=leia(b+1.0), t2=leia(b+2.0), t3=leia(b+3.0);
+  vec4 camp=modelViewMatrix*vec4(t0.xyz,1.0);
+  if(camp.z>-0.08){ gl_Position=vec4(0.0,0.0,2.0,1.0); return; }
+  vec4 clip=projectionMatrix*camp;
+
+  mat3 Vrk=mat3(t0.w,t1.x,t1.y, t1.x,t1.z,t1.w, t1.y,t1.w,t2.x);
+  mat3 J=mat3(
+    uFocal.x/camp.z, 0.0, -(uFocal.x*camp.x)/(camp.z*camp.z),
+    0.0, -uFocal.y/camp.z, (uFocal.y*camp.y)/(camp.z*camp.z),
+    0.0, 0.0, 0.0);
+  mat3 T=transpose(mat3(modelViewMatrix))*J;
+  mat3 cov=transpose(T)*Vrk*T;
+
+  float a=cov[0][0]+0.3, d=cov[1][1]+0.3, o=cov[0][1];
+  float mid=0.5*(a+d);
+  float rad=sqrt(max(0.0,mid*mid-(a*d-o*o)));
+  float l1=mid+rad, l2=mid-rad;
+  if(l2<0.0){ gl_Position=vec4(0.0,0.0,2.0,1.0); return; }
+  vec2 dv = abs(o)<1e-6 ? vec2(1.0,0.0) : normalize(vec2(o,l1-a));
+  vec2 eixoM=min(sqrt(2.0*l1),1024.0)*dv*uEscala;
+  vec2 eixom=min(sqrt(2.0*l2),1024.0)*vec2(dv.y,-dv.x)*uEscala;
+
+  vCor=vec4(t2.yzw,t3.x);
+  vQ=position.xy;
+  vec2 ndc=clip.xy/clip.w;
+  gl_Position=vec4(ndc + position.x*eixoM/uViewport*2.0 + position.y*eixom/uViewport*2.0,
+                   clip.z/clip.w, 1.0);
+}`;
+
+const FRAG=/* glsl */`
+precision highp float;
+uniform float uExpo;
+varying vec4 vCor;
+varying vec2 vQ;
+void main(){
+  float A=-dot(vQ,vQ);
+  if(A<-4.0) discard;
+  float b=exp(A)*vCor.a;
+  gl_FragColor=vec4(b*vCor.rgb*uExpo,b);
+}`;
+
+/* --- conversão: escala + quatérnio -> covariância 3D (6 valores) --- */
+function covDe(sx,sy,sz,qw,qx,qy,qz,out,o){
+  const n=Math.hypot(qw,qx,qy,qz)||1; qw/=n;qx/=n;qy/=n;qz/=n;
+  const r00=1-2*(qy*qy+qz*qz), r01=2*(qx*qy-qw*qz), r02=2*(qx*qz+qw*qy);
+  const r10=2*(qx*qy+qw*qz), r11=1-2*(qx*qx+qz*qz), r12=2*(qy*qz-qw*qx);
+  const r20=2*(qx*qz-qw*qy), r21=2*(qy*qz+qw*qx), r22=1-2*(qx*qx+qy*qy);
+  const m00=r00*sx,m01=r01*sy,m02=r02*sz;
+  const m10=r10*sx,m11=r11*sy,m12=r12*sz;
+  const m20=r20*sx,m21=r21*sy,m22=r22*sz;
+  out[o  ]=m00*m00+m01*m01+m02*m02;           // 00
+  out[o+1]=m00*m10+m01*m11+m02*m12;           // 01
+  out[o+2]=m00*m20+m01*m21+m02*m22;           // 02
+  out[o+3]=m10*m10+m11*m11+m12*m12;           // 11
+  out[o+4]=m10*m20+m11*m21+m12*m22;           // 12
+  out[o+5]=m20*m20+m21*m21+m22*m22;           // 22
+}
+
+/* --- leitor .splat (32 bytes por gaussiana, padrão de fato da web) --- */
+function lerSplat(buf){
+  const n=Math.floor(buf.byteLength/32);
+  if(n<1) throw new Error('arquivo .splat vazio ou corrompido');
+  /* vistas truncadas: alguns exportadores deixam bytes sobrando no fim */
+  const f=new Float32Array(buf,0,n*8), u=new Uint8Array(buf,0,n*32);
+  const pos=new Float32Array(n*3), esc=new Float32Array(n*3),
+        rot=new Float32Array(n*4), cor=new Uint8Array(n*4);
+  for(let i=0;i<n;i++){
+    const F=i*8, U=i*32;
+    pos[i*3]=f[F]; pos[i*3+1]=f[F+1]; pos[i*3+2]=f[F+2];
+    esc[i*3]=f[F+3]; esc[i*3+1]=f[F+4]; esc[i*3+2]=f[F+5];
+    cor[i*4]=u[U+24]; cor[i*4+1]=u[U+25]; cor[i*4+2]=u[U+26]; cor[i*4+3]=u[U+27];
+    rot[i*4]=(u[U+28]-128)/128; rot[i*4+1]=(u[U+29]-128)/128;
+    rot[i*4+2]=(u[U+30]-128)/128; rot[i*4+3]=(u[U+31]-128)/128;
+  }
+  return {n,pos,esc,rot,cor};
+}
+
+/* --- leitor .ply (saída do 3DGS original, Polycam, Luma, SuperSplat) --- */
+const SH0=0.28209479177387814;
+function lerPly(buf){
+  const bytes=new Uint8Array(buf);
+  const cab=new TextDecoder().decode(bytes.subarray(0,Math.min(bytes.length,1<<16)));
+  const fim=cab.indexOf('end_header');
+  if(fim<0) throw new Error('não é um .ply reconhecível');
+  const ini=cab.indexOf('\n',fim)+1;
+  const linhas=cab.slice(0,fim).split('\n').map(s=>s.trim());
+  if(!linhas.some(l=>l==='format binary_little_endian 1.0'))
+    throw new Error('só leio .ply binário little-endian (exporte assim do Polycam/SuperSplat)');
+  let n=0; const props=[];
+  const TAM={char:1,uchar:1,int8:1,uint8:1,short:2,ushort:2,int16:2,uint16:2,
+             int:4,uint:4,int32:4,uint32:4,float:4,float32:4,double:8,float64:8};
+  for(const l of linhas){
+    if(l.startsWith('element vertex')) n=parseInt(l.split(/\s+/)[2]);
+    else if(l.startsWith('property ')){ const p=l.split(/\s+/); props.push({t:p[1],nome:p[2]}); }
+  }
+  if(!n) throw new Error('.ply sem vértices');
+  let passo=0; const off={};
+  for(const p of props){ off[p.nome]={o:passo,t:p.t}; passo+=TAM[p.t]||4; }
+  const req=['x','y','z','scale_0','scale_1','scale_2','rot_0','rot_1','rot_2','rot_3','opacity','f_dc_0'];
+  for(const r of req) if(!(r in off)) throw new Error('.ply sem a propriedade "'+r+'" — não é um arquivo de Gaussian Splatting');
+  const dv=new DataView(buf,ini);
+  const pos=new Float32Array(n*3), esc=new Float32Array(n*3),
+        rot=new Float32Array(n*4), cor=new Uint8Array(n*4);
+  const g=(i,nome)=>{const p=off[nome]; const o=i*passo+p.o;
+    switch(p.t){case 'float':case 'float32':return dv.getFloat32(o,true);
+      case 'double':case 'float64':return dv.getFloat64(o,true);
+      case 'uchar':case 'uint8':return dv.getUint8(o);
+      case 'int':case 'int32':return dv.getInt32(o,true);
+      default:return dv.getFloat32(o,true);}};
+  const sig=x=>1/(1+Math.exp(-x));
+  for(let i=0;i<n;i++){
+    pos[i*3]=g(i,'x'); pos[i*3+1]=g(i,'y'); pos[i*3+2]=g(i,'z');
+    esc[i*3]=Math.exp(g(i,'scale_0')); esc[i*3+1]=Math.exp(g(i,'scale_1')); esc[i*3+2]=Math.exp(g(i,'scale_2'));
+    rot[i*4]=g(i,'rot_0'); rot[i*4+1]=g(i,'rot_1'); rot[i*4+2]=g(i,'rot_2'); rot[i*4+3]=g(i,'rot_3');
+    cor[i*4  ]=clamp((0.5+SH0*g(i,'f_dc_0'))*255,0,255);
+    cor[i*4+1]=clamp((0.5+SH0*g(i,'f_dc_1'))*255,0,255);
+    cor[i*4+2]=clamp((0.5+SH0*g(i,'f_dc_2'))*255,0,255);
+    cor[i*4+3]=clamp(sig(g(i,'opacity'))*255,0,255);
+  }
+  return {n,pos,esc,rot,cor};
+}
+
+/* --- reduz por importância (opacidade × volume) quando passa do teto --- */
+function reduzir(d,teto){
+  if(d.n<=teto) return d;
+  const imp=new Float32Array(d.n);
+  for(let i=0;i<d.n;i++)
+    imp[i]=(d.cor[i*4+3]/255)*d.esc[i*3]*d.esc[i*3+1]*d.esc[i*3+2];
+  const ord=Array.from({length:d.n},(_,i)=>i).sort((a,b)=>imp[b]-imp[a]).slice(0,teto);
+  const n=teto, pos=new Float32Array(n*3), esc=new Float32Array(n*3),
+        rot=new Float32Array(n*4), cor=new Uint8Array(n*4);
+  ord.forEach((s,k)=>{
+    for(let j=0;j<3;j++){pos[k*3+j]=d.pos[s*3+j]; esc[k*3+j]=d.esc[s*3+j];}
+    for(let j=0;j<4;j++){rot[k*4+j]=d.rot[s*4+j]; cor[k*4+j]=d.cor[s*4+j];}
+  });
+  return {n,pos,esc,rot,cor,reduzido:d.n};
+}
+
+/* --- monta a malha na GPU --- */
+function splatMontar(d){
+  splatLimpar();
+  const n=d.n;
+  const largura=1024, altura=Math.ceil(n*4/largura);
+  const dados=new Float32Array(largura*altura*4);
+  const cov=new Float32Array(6);
+  const cx=new Float32Array(3);
+  let minx=1e9,miny=1e9,minz=1e9,maxx=-1e9,maxy=-1e9,maxz=-1e9;
+  for(let i=0;i<n;i++){
+    covDe(d.esc[i*3],d.esc[i*3+1],d.esc[i*3+2],
+          d.rot[i*4],d.rot[i*4+1],d.rot[i*4+2],d.rot[i*4+3],cov,0);
+    const b=i*16;
+    const x=d.pos[i*3],y=d.pos[i*3+1],z=d.pos[i*3+2];
+    dados[b  ]=x; dados[b+1]=y; dados[b+2]=z; dados[b+3]=cov[0];
+    dados[b+4]=cov[1]; dados[b+5]=cov[2]; dados[b+6]=cov[3]; dados[b+7]=cov[4];
+    dados[b+8]=cov[5];
+    dados[b+9 ]=d.cor[i*4  ]/255;
+    dados[b+10]=d.cor[i*4+1]/255;
+    dados[b+11]=d.cor[i*4+2]/255;
+    dados[b+12]=d.cor[i*4+3]/255;
+    if(x<minx)minx=x; if(x>maxx)maxx=x;
+    if(y<miny)miny=y; if(y>maxy)maxy=y;
+    if(z<minz)minz=z; if(z>maxz)maxz=z;
+  }
+  const tex=new THREE.DataTexture(dados,largura,altura,THREE.RGBAFormat,THREE.FloatType);
+  tex.minFilter=tex.magFilter=THREE.NearestFilter; tex.needsUpdate=true;
+
+  const geo=new THREE.InstancedBufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(
+    new Float32Array([-2,-2,0, 2,-2,0, 2,2,0, -2,2,0]),3));
+  geo.setIndex([0,1,2,0,2,3]);
+  const idx=new Float32Array(n); for(let i=0;i<n;i++) idx[i]=i;
+  const idxAttr=new THREE.InstancedBufferAttribute(idx,1);
+  idxAttr.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('sIndex',idxAttr);
+  geo.instanceCount=n;
+  geo.boundingSphere=new THREE.Sphere(
+    new THREE.Vector3((minx+maxx)/2,(miny+maxy)/2,(minz+maxz)/2),
+    Math.hypot(maxx-minx,maxy-miny,maxz-minz)/2+1);
+
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{uDados:{value:tex},uTexSize:{value:new THREE.Vector2(largura,altura)},
+      uViewport:{value:new THREE.Vector2(1,1)},uFocal:{value:new THREE.Vector2(1,1)},
+      uEscala:{value:SPLAT.escala},uExpo:{value:SPLAT.exposicao}},
+    vertexShader:VERT,fragmentShader:FRAG,
+    transparent:true,depthTest:true,depthWrite:false,
+    blending:THREE.CustomBlending,
+    blendSrc:THREE.OneFactor,blendDst:THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneMinusSrcAlphaFactor});
+
+  const mesh=new THREE.Mesh(geo,mat); mesh.frustumCulled=false; gSplat.add(mesh);
+  Object.assign(SPLAT,{n,dados:d,mesh,mat,tex,idxAttr,
+    ordem:new Uint32Array(n),prof:new Float32Array(n),
+    caixa:{minx,miny,minz,maxx,maxy,maxz},ultCam:new THREE.Vector3(9e9,0,0)});
+  redim();
+  splatEnquadrar();
+  splatOrdenar(true);
+}
+function splatLimpar(){
+  if(SPLAT.mesh){ gSplat.remove(SPLAT.mesh); SPLAT.mesh.geometry.dispose();
+    SPLAT.mat.dispose(); SPLAT.tex.dispose(); }
+  Object.assign(SPLAT,{n:0,dados:null,mesh:null,mat:null,tex:null,idxAttr:null});
+}
+function splatEnquadrar(){
+  const c=SPLAT.caixa; if(!c)return;
+  ctl.alvo.set((c.minx+c.maxx)/2,(c.miny+c.maxy)/2,(c.minz+c.maxz)/2);
+  ctl.dist=Math.max(2,Math.hypot(c.maxx-c.minx,c.maxy-c.miny,c.maxz-c.minz)*0.8);
+  ctl.orbita=true; ctl.yaw=0.6; ctl.pitch=0.22; aplicarCam();
+}
+
+/* --- ordenação por profundidade: counting sort de 16 bits, longe → perto --- */
+const BINS=new Int32Array(65536);
+function splatOrdenar(forcar){
+  if(!SPLAT.n)return;
+  const dir=new THREE.Vector3(); cam.getWorldDirection(dir);
+  if(!forcar){
+    if(cam.position.distanceToSquared(SPLAT.ultCam)<0.0009 && dir.dot(SPLAT.ultDir)>0.99985) return;
+    if(performance.now()-SPLAT.tOrd<55) return;
+  }
+  SPLAT.ultCam.copy(cam.position); SPLAT.ultDir.copy(dir); SPLAT.tOrd=performance.now();
+  const n=SPLAT.n, pos=SPLAT.dados.pos, prof=SPLAT.prof;
+  const cx=cam.position.x,cy=cam.position.y,cz=cam.position.z;
+  const dx=dir.x,dy=dir.y,dz=dir.z;
+  let mn=1e30,mx=-1e30;
+  for(let i=0;i<n;i++){
+    const d=(pos[i*3]-cx)*dx+(pos[i*3+1]-cy)*dy+(pos[i*3+2]-cz)*dz;
+    prof[i]=d; if(d<mn)mn=d; if(d>mx)mx=d;
+  }
+  const esp=(mx-mn)||1, k=65535/esp;
+  BINS.fill(0);
+  const chave=new Uint16Array(n);
+  for(let i=0;i<n;i++){ const c=((prof[i]-mn)*k)|0; chave[i]=c; BINS[c]++; }
+  /* prefixo decrescente: bin mais alto (mais longe) primeiro */
+  let soma=0;
+  for(let b=65535;b>=0;b--){ const c=BINS[b]; BINS[b]=soma; soma+=c; }
+  const ordem=SPLAT.ordem;
+  for(let i=0;i<n;i++) ordem[BINS[chave[i]]++]=i;
+  const arr=SPLAT.idxAttr.array;
+  for(let i=0;i<n;i++) arr[i]=ordem[i];
+  SPLAT.idxAttr.needsUpdate=true;
+}
+
+/* ============================================================================
+   CENA DE EXEMPLO — gaussianas geradas por código
+   Serve para provar que o pipeline de renderização funciona sem depender de
+   nenhuma captura. NÃO é uma captura real e não deve ser confundida com uma.
+   ========================================================================== */
+function exemploSplat(){
+  const P=[],E=[],R=[],C=[];
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  function g(x,y,z,sx,sy,sz,r,vg,b,a,qx,qy,qz,qw){
+    P.push(x,y,z); E.push(sx,sy,sz); R.push(qw??1,qx??0,qy??0,qz??0);
+    C.push(clamp(r,0,255)|0,clamp(vg,0,255)|0,clamp(b,0,255)|0,clamp(a,0,255)|0);
+  }
+  /* placa: distribui gaussianas achatadas sobre um retângulo */
+  function placa(cx,cy,cz,lx,ly,lz,cor,dens,rug){
+    const area=(lx||1)*(ly||1)*(lz||1), qtd=Math.max(400,(dens*Math.max(lx*lz,lx*ly,ly*lz))|0);
+    const fino=0.008;
+    for(let i=0;i<qtd;i++){
+      const x=cx+rnd(-lx/2,lx/2), y=cy+rnd(-ly/2,ly/2), z=cz+rnd(-lz/2,lz/2);
+      const v=rnd(-rug,rug);
+      g(x,y,z, lx<0.02?fino:0.035, ly<0.02?fino:0.035, lz<0.02?fino:0.035,
+        cor[0]+v,cor[1]+v,cor[2]+v, rnd(215,250));
+    }
+  }
+  function caixa(cx,cy,cz,lx,ly,lz,cor,dens,rug=10){
+    placa(cx,cy+ly/2,cz,lx,0.01,lz,cor,dens,rug);
+    placa(cx,cy-ly/2,cz,lx,0.01,lz,[cor[0]*.5,cor[1]*.5,cor[2]*.5],dens*.4,rug);
+    placa(cx-lx/2,cy,cz,0.01,ly,lz,[cor[0]*.86,cor[1]*.86,cor[2]*.86],dens,rug);
+    placa(cx+lx/2,cy,cz,0.01,ly,lz,[cor[0]*.86,cor[1]*.86,cor[2]*.86],dens,rug);
+    placa(cx,cy,cz-lz/2,lx,ly,0.01,[cor[0]*.92,cor[1]*.92,cor[2]*.92],dens,rug);
+    placa(cx,cy,cz+lz/2,lx,ly,0.01,[cor[0]*.92,cor[1]*.92,cor[2]*.92],dens,rug);
+  }
+  const L=7.2,W=5.4,H=2.8;
+  placa(0,0,0,L,0.01,W,[132,102,72],2600,16);                 // piso madeira
+  placa(0,H,0,L,0.01,W,[236,233,226],900,5);                  // teto
+  placa(-L/2,H/2,0,0.01,H,W,[224,220,212],1500,6);            // parede esq
+  placa(L/2,H/2,0,0.01,H,W,[224,220,212],1500,6);             // parede dir
+  placa(0,H/2,-W/2,L,H,0.01,[218,214,206],1500,6);            // parede fundo
+  placa(0,H/2,W/2,L,H,0.01,[228,224,216],900,6);              // parede frente
+  /* janela: retângulo muito claro na parede do fundo */
+  placa(1.3,1.55,-W/2+0.02,2.4,1.5,0.01,[252,250,244],3000,3);
+  placa(1.3,1.55,-W/2+0.06,2.5,1.6,0.01,[250,246,238],400,3);
+  /* tapete */
+  placa(-0.4,0.012,0.5,3.4,0.01,2.4,[168,154,136],2200,12);
+  /* sofá */
+  caixa(-0.4,0.36,1.5,2.5,0.62,0.95,[92,98,110],1500);
+  caixa(-0.4,0.76,1.88,2.5,0.66,0.24,[100,106,118],1500);
+  caixa(-1.58,0.62,1.5,0.2,0.5,0.95,[86,92,104],1500);
+  caixa( 0.78,0.62,1.5,0.2,0.5,0.95,[86,92,104],1500);
+  /* mesa de centro */
+  caixa(-0.4,0.42,0.05,1.35,0.06,0.66,[58,46,38],1900);
+  for(const [x,z] of [[-0.98,-0.22],[0.18,-0.22],[-0.98,0.32],[0.18,0.32]])
+    caixa(x,0.2,z,0.06,0.4,0.06,[48,38,30],2400);
+  /* aparador + planta */
+  caixa(2.5,0.4,-1.9,1.5,0.8,0.4,[74,60,46],1600);
+  for(let i=0;i<2600;i++){
+    const t=Math.random()*Math.PI*2, u=Math.random(), r=0.42*Math.sqrt(u);
+    g(2.5+Math.cos(t)*r, 1.28+rnd(-0.32,0.38), -1.9+Math.sin(t)*r,
+      0.05,0.05,0.05, rnd(46,86), rnd(96,148), rnd(48,80), rnd(200,246));
+  }
+  caixa(2.5,0.95,-1.9,0.16,0.3,0.16,[120,96,72],2200);
+  /* luminária de pé */
+  caixa(-2.6,0.9,-1.6,0.05,1.8,0.05,[52,52,58],2600);
+  for(let i=0;i<1400;i++){
+    const t=Math.random()*Math.PI*2, y=rnd(1.78,2.05), r=0.16+(2.05-y)*0.5;
+    g(-2.6+Math.cos(t)*r, y, -1.6+Math.sin(t)*r, 0.035,0.035,0.035,
+      248,240,222, rnd(200,250));
+  }
+  /* quadro */
+  placa(-L/2+0.03,1.7,-0.6,0.01,0.9,1.3,[196,180,150],2600,22);
+
+  const n=P.length/3;
+  const pos=new Float32Array(P), esc=new Float32Array(E),
+        rot=new Float32Array(R), cor=new Uint8Array(C);
+  return {n,pos,esc,rot,cor,exemplo:true};
+}
+
+/* ============================================================================
+   PAINEL
+   ========================================================================== */
+let MODO='pano', AVISO='';
+function aviso(t,erro){ AVISO=t?{t,erro}:''; painel(); }
+
+function painel(){
+  if(MODO==='pano') painelPano(); else painelSplat();
+}
+function painelPano(){
+  const e=PANO.estacoes, est=e[PANO.atual];
+  corpo.innerHTML=`
+  <div class="sec">
+    <h4>Fotos 360</h4>
+    <div class="drop" id="dzPano">
+      <div class="t">Arraste as panorâmicas aqui</div>
+      <div class="u">JPG ou PNG equirretangular (2:1).<br>Uma foto por ambiente.</div>
+    </div>
+    <div class="hint" style="margin-top:10px">Sai de qualquer câmera 360 (Insta360, Ricoh Theta)
+      ou do modo panorama do celular fechando 360°.</div>
+  </div>
+  <div class="sec">
+    <h4>Estações · ${e.length}</h4>
+    ${e.length?e.map((s,i)=>`
+      <div class="est ${i===PANO.atual?'on':''}" data-i="${i}">
+        ${s.thumb?`<img class="mini" src="${s.thumb}" alt="">`:'<div class="mini"></div>'}
+        <div class="nm">${s.nome}</div>
+        <div class="qt">${s.hots.length?s.hots.length+'↦':''} ${s.pinos.length?s.pinos.length+'●':''}</div>
+        <button class="x" data-del="${i}">×</button>
+      </div>`).join(''):'<div class="hint">Nenhuma estação carregada ainda.</div>'}
+    ${est?`<div class="lin" style="margin-top:8px"><label>nome</label>
+      <input type="text" id="iNome" value="${est.nome}"></div>`:''}
+  </div>
+  ${e.length?`
+  <div class="sec">
+    <h4>Modo de exibição</h4>
+    <div class="opts">
+      <button class="opt ${PANO.modo==='esfera'?'on':''}" data-modo="esfera">Panorâmica<small>sem paralaxe</small></button>
+      <button class="opt ${PANO.modo==='caixa'?'on':''}" data-modo="caixa">Caminhar<small>paralaxe</small></button>
+      <button class="opt ${PANO.modo==='malha'?'on':''}" data-modo="malha">Profundidade<small>${est&&est.depth?'pronto':'sem mapa'}</small></button>
+    </div>
+    ${PANO.modo==='caixa'?`
+      <div class="lin"><label>largura</label>
+        <input type="range" id="sL" min="2" max="14" step="0.1" value="${PANO.sala.L}">
+        <span class="v">${PANO.sala.L.toFixed(1)} m</span></div>
+      <div class="lin"><label>profund.</label>
+        <input type="range" id="sP" min="2" max="14" step="0.1" value="${PANO.sala.P}">
+        <span class="v">${PANO.sala.P.toFixed(1)} m</span></div>
+      <div class="lin"><label>pé-direito</label>
+        <input type="range" id="sH" min="2.2" max="5" step="0.05" value="${PANO.sala.H}">
+        <span class="v">${PANO.sala.H.toFixed(2)} m</span></div>
+      <div class="lin"><label>altura foto</label>
+        <input type="range" id="sHc" min="0.8" max="2.2" step="0.05" value="${PANO.sala.hc}">
+        <span class="v">${PANO.sala.hc.toFixed(2)} m</span></div>
+      <button class="bt mini ${PANO.grade?'ouro':''}" id="btGrade">
+        ${PANO.grade?'Ocultar o volume':'Mostrar o volume'}</button>
+      <div class="hint" style="margin-top:9px">As arestas douradas são o volume que você está
+        ajustando. Mova com <b>W A S D</b> e mexa nos controles até o rodapé e o teto
+        ficarem retos — a partir daí existe paralaxe de verdade.</div>`:''}
+    ${PANO.modo==='malha'?`
+      <button class="bt mini" id="btDepth">Carregar mapa de profundidade</button>
+      <div class="lin" style="margin-top:9px"><label>perto</label>
+        <input type="range" id="pMin" min="0.4" max="4" step="0.1" value="${PANO.prof.min}">
+        <span class="v">${PANO.prof.min.toFixed(1)} m</span></div>
+      <div class="lin"><label>longe</label>
+        <input type="range" id="pMax" min="3" max="30" step="0.5" value="${PANO.prof.max}">
+        <span class="v">${PANO.prof.max.toFixed(1)} m</span></div>
+      <div class="hint">PNG em tons de cinza, <b>branco = perto</b>. Gere em Depth Anything,
+        MiDaS ou 360MonoDepth e arraste aqui.</div>`:''}
+  </div>
+  <div class="sec">
+    <h4>Pontos na cena</h4>
+    <button class="acao ${PANO.editando==='passagem'?'on':''}" data-edit="passagem">
+      <span class="sim">&#8594;</span>
+      <span class="tt"><b>Ponto de passagem</b>
+        <small>Leva o visitante para outro ambiente do tour</small></span>
+      <span class="st">${PANO.editando==='passagem'?'clique na cena':''}</span>
+    </button>
+    <button class="acao ${PANO.editando==='movel'?'on':''}" data-edit="movel">
+      <span class="sim">&#9679;</span>
+      <span class="tt"><b>Pino de móvel</b>
+        <small>Abre um card com preço e botão de carrinho</small></span>
+      <span class="st">${PANO.editando==='movel'?'clique na cena':''}</span>
+    </button>
+    <div class="hint">Peças criadas no <b>WS Atelier</b> chegam aqui prontas, com preço e medida.</div>
+  </div>
+  ${est&&est.hots.length?`
+  <div class="sec">
+    <h4>Passagens deste ambiente · ${est.hots.length}</h4>
+    ${est.hots.map((h,i)=>`
+      <div class="reg">
+        <span class="n">${i+1}</span>
+        <select data-hot="${i}">${e.filter((_,j)=>j!==PANO.atual).map(s2=>
+          `<option value="${s2.id}" ${s2.id===h.destino?'selected':''}>${s2.nome}</option>`).join('')}</select>
+        <button class="ir" data-hir="${i}" title="ir agora">&#8594;</button>
+        <button class="del" data-hdel="${i}" title="remover">&#10005;</button>
+      </div>`).join('')}
+  </div>`:''}
+  ${est&&est.pinos.length?`
+  <div class="sec">
+    <h4>Móveis deste ambiente · ${est.pinos.length}</h4>
+    ${est.pinos.map((p,i)=>`
+      <div class="reg">
+        <span class="n">${i+1}</span>
+        <input type="text" data-pn="${i}" value="${p.movel.nome}" placeholder="nome do móvel">
+        <input type="number" class="pr" data-pp="${i}" value="${p.movel.preco||''}" placeholder="R$">
+        <button class="del" data-pdel="${i}" title="remover">&#10005;</button>
+      </div>`).join('')}
+  </div>`:''}
+  ${CART.length?`
+  <div class="sec">
+    <h4>Carrinho · ${CART.length}</h4>
+    ${CART.map(c=>`<div class="stat"><span>${c.nome}</span><span>${c.preco?c.preco.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}):'—'}</span></div>`).join('')}
+    <div class="stat" style="border:none;margin-top:4px"><span><b>total</b></span>
+      <span><b>${CART.reduce((a,c)=>a+(c.preco||0),0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</b></span></div>
+  </div>`:''}
+  <div class="sec">
+    <h4>Ajustes</h4>
+    <div class="lin"><label>norte</label>
+      <input type="range" id="rNorte" min="0" max="360" value="${PANO.norte}">
+      <span class="v">${PANO.norte}°</span></div>
+    <div class="lin"><label>abertura</label>
+      <input type="range" id="rFov" min="30" max="95" value="${Math.round(cam.fov)}">
+      <span class="v">${Math.round(cam.fov)}°</span></div>
+    <div class="lin"><label>exposição</label>
+      <input type="range" id="rExp" min="50" max="180" value="${Math.round(renderer.toneMappingExposure*100)}">
+      <span class="v">${renderer.toneMappingExposure.toFixed(2)}</span></div>
+  </div>
+  <div class="sec">
+    <h4>Percurso salvo</h4>
+    <button class="bt mini" id="btExp">Exportar percurso (JSON)</button>
+    <div class="hint" style="margin-top:8px">Guarda nomes, passagens, pinos de móvel, preços e norte.
+      <b>As imagens não vão no JSON</b> — ficam no seu computador até existir o Supabase.</div>
+  </div>`:''}
+  ${AVISO?`<div class="aviso ${AVISO.erro?'err':''}">${AVISO.t}</div>`:''}
+  <div class="sec" style="margin-top:26px">
+    <h4>Antes de publicar</h4>
+    <div class="hint">O imóvel capturado mostra a vida de alguém.
+      <b>Autorização escrita do proprietário</b> antes de gravar, e nada de rosto,
+      documento ou tela de computador no quadro.</div>
+  </div>`;
+  ligarPano();
+}
+function ligarPano(){
+  const dz=$('#dzPano'); if(dz) dz.onclick=()=>$('#fPano').click();
+  $$('.est').forEach(n=>n.onclick=ev=>{
+    if(ev.target.dataset.del!==undefined) return; panoIr(+n.dataset.i); });
+  $$('[data-del]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();panoRemover(+b.dataset.del)});
+  const inm=$('#iNome'); if(inm) inm.oninput=()=>{
+    PANO.estacoes[PANO.atual].nome=inm.value; $('#cap').textContent=inm.value;
+    $$('.est')[PANO.atual].querySelector('.nm').textContent=inm.value; };
+  $$('[data-modo]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.modo==='malha' && !(PANO.estacoes[PANO.atual]||{}).depth){
+      PANO.modo='malha'; painel(); $('#fDepth').click(); return; }
+    PANO.modo=b.dataset.modo; panoAplicarModo(); painel(); });
+  $$('[data-edit]').forEach(b=>b.onclick=()=>{
+    modoColocar(PANO.editando===b.dataset.edit ? null : b.dataset.edit); painel(); });
+  const est2=()=>PANO.estacoes[PANO.atual];
+  $$('[data-hot]').forEach(sel=>sel.onchange=()=>{
+    est2().hots[+sel.dataset.hot].destino=sel.value; pinosRender(); });
+  $$('[data-hir]').forEach(b=>b.onclick=()=>{
+    const j=PANO.estacoes.findIndex(x=>x.id===est2().hots[+b.dataset.hir].destino);
+    if(j>=0) panoIr(j); });
+  $$('[data-hdel]').forEach(b=>b.onclick=()=>{
+    est2().hots.splice(+b.dataset.hdel,1); pinosRender(); painel(); });
+  $$('[data-pn]').forEach(i=>i.oninput=()=>{
+    est2().pinos[+i.dataset.pn].movel.nome=i.value;
+    const n=$$('.pin')[+i.dataset.pn]; if(n) n.title=i.value; });
+  $$('[data-pp]').forEach(i=>i.oninput=()=>
+    est2().pinos[+i.dataset.pp].movel.preco=+i.value||0);
+  $$('[data-pdel]').forEach(b=>b.onclick=()=>{
+    est2().pinos.splice(+b.dataset.pdel,1); pinosRender(); painel(); });
+  const bd=$('#btDepth'); if(bd) bd.onclick=()=>$('#fDepth').click();
+  const bg=$('#btGrade'); if(bg) bg.onclick=()=>{ PANO.grade=!PANO.grade;
+    if(gradeMesh) gradeMesh.visible=PANO.grade; painel(); };
+  const lig=(id,fn,fmt)=>{ const n=$('#'+id); if(!n)return;
+    n.oninput=()=>{ fn(+n.value); n.nextElementSibling.textContent=fmt(+n.value); }; };
+  lig('sL',v=>{PANO.sala.L=v;construirSala()},v=>v.toFixed(1)+' m');
+  lig('sP',v=>{PANO.sala.P=v;construirSala()},v=>v.toFixed(1)+' m');
+  lig('sH',v=>{PANO.sala.H=v;construirSala()},v=>v.toFixed(2)+' m');
+  lig('sHc',v=>{PANO.sala.hc=v;construirSala()},v=>v.toFixed(2)+' m');
+  lig('pMin',v=>{PANO.prof.min=v;construirMalha()},v=>v.toFixed(1)+' m');
+  lig('pMax',v=>{PANO.prof.max=v;construirMalha()},v=>v.toFixed(1)+' m');
+  const rn=$('#rNorte'); if(rn) rn.oninput=()=>{PANO.norte=+rn.value;
+    const r=PANO.norte*Math.PI/180;
+    if(PANO.malhaA)PANO.malhaA.rotation.y=r; if(PANO.malhaB)PANO.malhaB.rotation.y=r;
+    if(salaMesh){ if(salaMesh.material.uniforms) salaMesh.material.uniforms.uYaw.value=PANO.norte/360;
+      else salaMesh.rotation.y=r; }
+    rn.nextElementSibling.textContent=PANO.norte+'°';};
+  const rf=$('#rFov'); if(rf) rf.oninput=()=>{cam.fov=+rf.value;ANDAR.fovBase=+rf.value;
+    cam.updateProjectionMatrix(); rf.nextElementSibling.textContent=rf.value+'°';};
+  const rx=$('#rExp'); if(rx) rx.oninput=()=>{renderer.toneMappingExposure=+rx.value/100;
+    rx.nextElementSibling.textContent=(+rx.value/100).toFixed(2);};
+  const bx=$('#btExp'); if(bx) bx.onclick=exportarPercurso;
+}
+function exportarPercurso(){
+  const j={versao:2,tipo:'ws-tour-360',norte:PANO.norte,modo:PANO.modo,
+    sala:{...PANO.sala}, atencao:PANO.atencao,
+    carrinho:CART, total:CART.reduce((a,c)=>a+(c.preco||0),0),
+    estacoes:PANO.estacoes.map(s=>({id:s.id,nome:s.nome,arquivo:s.nome,
+      passagens:s.hots, pinos:s.pinos.map(p=>({yaw:p.yaw,pitch:p.pitch,movel:p.movel}))}))};
+  const b=new Blob([JSON.stringify(j,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='ws-tour-360.json'; a.click();
+}
+function painelSplat(){
+  const d=SPLAT.dados;
+  corpo.innerHTML=`
+  <div class="sec">
+    <h4>Arquivo de captura</h4>
+    <div class="drop" id="dzSplat">
+      <div class="t">Arraste o .splat ou .ply aqui</div>
+      <div class="u">Saída de Polycam, Luma AI, SuperSplat,<br>Postshot ou nerfstudio.</div>
+    </div>
+    <button class="bt" id="btEx">Gerar cena de exemplo</button>
+    <div class="hint" style="margin-top:9px">A cena de exemplo é <b>gerada por código</b>: serve para
+      testar o renderizador, não é uma captura real.</div>
+  </div>
+  ${SPLAT.n?`
+  <div class="sec">
+    <h4>Captura</h4>
+    <div class="stat"><span>gaussianas</span><span>${SPLAT.n.toLocaleString('pt-BR')}</span></div>
+    ${d&&d.reduzido?`<div class="stat"><span>original</span><span>${d.reduzido.toLocaleString('pt-BR')}</span></div>`:''}
+    <div class="stat"><span>memória GPU</span><span>${(SPLAT.n*64/1048576).toFixed(1)} MB</span></div>
+    <div class="stat"><span>origem</span><span>${d&&d.exemplo?'exemplo sintético':'arquivo carregado'}</span></div>
+  </div>
+  <div class="sec">
+    <h4>Ajuste visual</h4>
+    <div class="lin"><label>tamanho</label>
+      <input type="range" id="rEsc" min="40" max="200" value="${Math.round(SPLAT.escala*100)}">
+      <span class="v">${SPLAT.escala.toFixed(2)}</span></div>
+    <div class="lin"><label>exposição</label>
+      <input type="range" id="rExpo" min="40" max="220" value="${Math.round(SPLAT.exposicao*100)}">
+      <span class="v">${SPLAT.exposicao.toFixed(2)}</span></div>
+    <div class="lin"><label>abertura</label>
+      <input type="range" id="rFov2" min="30" max="100" value="${Math.round(cam.fov)}">
+      <span class="v">${Math.round(cam.fov)}°</span></div>
+  </div>
+  <div class="sec">
+    <h4>Navegação</h4>
+    <button class="bt mini" id="btEnq">Enquadrar a captura</button>
+    <button class="bt mini" id="btAndar">${ctl.orbita?'Entrar e caminhar':'Voltar para órbita'}</button>
+    <div class="hint" style="margin-top:9px">Arrastar gira · roda aproxima ·
+      <b>W A S D</b> caminha · <b>Q E</b> sobe e desce.</div>
+  </div>`:''}
+  <div class="sec">
+    <h4>Limite de qualidade</h4>
+    <div class="lin"><label>teto</label>
+      <select id="sTeto">
+        <option value="200000">200 mil (celular)</option>
+        <option value="400000" selected>400 mil (equilíbrio)</option>
+        <option value="800000">800 mil (desktop bom)</option>
+        <option value="1600000">1,6 milhão (máquina forte)</option>
+      </select></div>
+    <div class="hint">Acima do teto, descartamos as gaussianas de menor importância
+      (opacidade × volume) — o que sai primeiro é o que menos aparece.</div>
+  </div>
+  ${AVISO?`<div class="aviso ${AVISO.erro?'err':''}">${AVISO.t}</div>`:''}
+  <div class="sec" style="margin-top:26px">
+    <h4>O que ainda não dá</h4>
+    <div class="hint">Um splat <b>não é editável</b>: não dá para trocar o piso nem mover um móvel dele.
+      Para isso, o imóvel precisa do modelo autoral do WS Studio por baixo.</div>
+  </div>`;
+  ligarSplat();
+}
+function ligarSplat(){
+  const dz=$('#dzSplat'); if(dz) dz.onclick=()=>$('#fSplat').click();
+  const be=$('#btEx'); if(be) be.onclick=()=>{
+    carregando('gerando cena de exemplo',0.1);
+    setTimeout(()=>{ try{ splatMontar(exemploSplat()); aviso(''); }
+      catch(e){ aviso('Falhou ao montar: '+e.message,true); }
+      carregando(null); painel(); },40);
+  };
+  const re=$('#rEsc'); if(re) re.oninput=()=>{SPLAT.escala=+re.value/100;
+    if(SPLAT.mat)SPLAT.mat.uniforms.uEscala.value=SPLAT.escala;
+    re.nextElementSibling.textContent=SPLAT.escala.toFixed(2);};
+  const rx=$('#rExpo'); if(rx) rx.oninput=()=>{SPLAT.exposicao=+rx.value/100;
+    if(SPLAT.mat)SPLAT.mat.uniforms.uExpo.value=SPLAT.exposicao;
+    rx.nextElementSibling.textContent=SPLAT.exposicao.toFixed(2);};
+  const rf=$('#rFov2'); if(rf) rf.oninput=()=>{cam.fov=+rf.value;ANDAR.fovBase=+rf.value;
+    cam.updateProjectionMatrix(); rf.nextElementSibling.textContent=rf.value+'°';};
+  const bq=$('#btEnq'); if(bq) bq.onclick=()=>{splatEnquadrar();painel()};
+  const ba=$('#btAndar'); if(ba) ba.onclick=()=>{
+    if(ctl.orbita){ ctl.orbita=false;
+      const c=SPLAT.caixa; cam.position.set((c.minx+c.maxx)/2,(c.miny+c.maxy)/2,(c.minz+c.maxz)/2); }
+    else ctl.orbita=true;
+    aplicarCam(); painel();
+  };
+}
+
+function carregando(t,p){
+  const n=$('#carregando');
+  if(t===null){n.style.display='none';return;}
+  n.style.display='flex'; $('#cgT').textContent=t; $('#cgB').style.width=(p*100)+'%';
+}
+
+/* ---------- entrada de arquivos ---------- */
+$('#fPano').onchange=e=>{ panoAddArquivos([...e.target.files]); e.target.value=''; };
+$('#fSplat').onchange=e=>{ if(e.target.files[0]) abrirSplat(e.target.files[0]); e.target.value=''; };
+$('#fDepth').onchange=e=>{ if(e.target.files[0]) panoAddDepth(e.target.files[0]); e.target.value=''; };
+
+async function abrirSplat(file){
+  const teto=+((document.getElementById('sTeto')||{}).value||400000);
+  carregando('lendo '+file.name,0.15);
+  try{
+    const buf=await file.arrayBuffer();
+    carregando('interpretando gaussianas',0.45);
+    await new Promise(r=>setTimeout(r,20));
+    let d;
+    const nome=file.name.toLowerCase();
+    if(nome.endsWith('.ply')) d=lerPly(buf);
+    else if(nome.endsWith('.splat')||nome.endsWith('.ksplat')) d=lerSplat(buf);
+    else throw new Error('extensão não reconhecida — use .splat ou .ply');
+    const antes=d.n;
+    carregando('otimizando',0.7); await new Promise(r=>setTimeout(r,20));
+    d=reduzir(d,teto);
+    carregando('enviando para a GPU',0.9); await new Promise(r=>setTimeout(r,20));
+    splatMontar(d);
+    $('#cap').textContent=file.name;
+    aviso(antes>d.n
+      ? 'Carregado. Reduzimos de '+antes.toLocaleString('pt-BR')+' para '+d.n.toLocaleString('pt-BR')+' gaussianas pelo teto de qualidade.'
+      : 'Carregado: '+d.n.toLocaleString('pt-BR')+' gaussianas.');
+  }catch(err){
+    aviso('Não consegui abrir: '+err.message,true);
+  }
+  carregando(null); painel();
+}
+
+/* arrastar e soltar em qualquer lugar */
+['dragenter','dragover'].forEach(ev=>addEventListener(ev,e=>{
+  e.preventDefault(); $$('.drop').forEach(d=>d.classList.add('hot'));}));
+['dragleave','drop'].forEach(ev=>addEventListener(ev,e=>{
+  e.preventDefault(); $$('.drop').forEach(d=>d.classList.remove('hot'));}));
+addEventListener('drop',e=>{
+  e.preventDefault();
+  const fs=[...(e.dataTransfer.files||[])]; if(!fs.length)return;
+  const splat=fs.find(f=>/\.(splat|ply|ksplat)$/i.test(f.name));
+  if(splat){ trocarModo('splat'); abrirSplat(splat); return; }
+  const imgs=fs.filter(f=>f.type.startsWith('image/'));
+  if(imgs.length){ trocarModo('pano'); panoAddArquivos(imgs); }
+});
+
+/* ---------- abas e topo ---------- */
+function trocarModo(m){
+  MODO=m; AVISO='';
+  $$('#abas button').forEach(b=>b.classList.toggle('on',b.dataset.aba===m));
+  gPano.visible=(m==='pano'); gSplat.visible=(m==='splat');
+  const vazio=((m==='pano'&&!PANO.estacoes.length)||(m==='splat'&&!SPLAT.n));
+  $('#vazio').style.display=vazio?'flex':'none';
+  if(vazio) $('#vazio').innerHTML = m==='pano'
+    ? `<div class="g">TOUR 360</div>
+       <div class="p"><b>1.</b> Arraste as fotos equirretangulares (2:1) — uma por ambiente.<br>
+       <b>2.</b> Ligue o modo <b>Caminhar</b> e ajuste o volume até o rodapé ficar reto.<br>
+       <b>3.</b> Marque as passagens entre ambientes e os pinos dos móveis.</div>`
+    : `<div class="g">GAUSSIAN SPLAT</div>
+       <div class="p"><b>1.</b> Grave o imóvel em vídeo seguindo o protocolo de captura.<br>
+       <b>2.</b> Processe em Polycam, Luma AI, Postshot ou nerfstudio.<br>
+       <b>3.</b> Arraste o <b>.splat</b> ou <b>.ply</b> aqui — ou gere a cena de exemplo para testar.</div>`;
+  if(m==='pano'){ ctl.orbita=false; cam.position.set(0,0,0); $('#cap').textContent=PANO.atual>=0?PANO.estacoes[PANO.atual].nome:''; }
+  else { if(SPLAT.n) splatEnquadrar(); $('#cap').textContent=SPLAT.n?'captura':''; }
+  pinosRender(); painel();
+}
+$$('#abas button').forEach(b=>b.onclick=()=>trocarModo(b.dataset.aba));
+$('#puxar').onclick=()=>{ const l=$('#lado'); l.classList.toggle('oculto');
+  $('#puxar').textContent=l.classList.contains('oculto')?'›':'‹'; setTimeout(redim,270); };
+$('#btAuto').onclick=()=>{ ctl.auto=!ctl.auto; $('#btAuto').classList.toggle('on',ctl.auto);
+  $('#btAuto').textContent=ctl.auto?'Girando':'Órbita'; };
+$('#btTela').onclick=()=>{ document.fullscreenElement?document.exitFullscreen():visor.requestFullscreen(); };
+$('#btFoto').onclick=()=>{
+  const pr=renderer.getPixelRatio();
+  renderer.setPixelRatio(Math.min(3,pr*2)); redim(); renderer.render(scene,cam);
+  cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='ws-camada-real.png'; a.click();
+    renderer.setPixelRatio(pr); redim(); });
+};
+$('#btVoltar').onclick=()=>parent.postMessage({tipo:'ws:voltar-mundo'},'*');
+$('#btVisita').onclick=()=>{ PANO.visitante=!PANO.visitante;
+  document.body.classList.toggle('visitante',PANO.visitante);
+  $('#btVisita').classList.toggle('on',PANO.visitante);
+  movelPendente=null; modoColocar(null); pinosRender(); painel(); setTimeout(redim,60); };
+$('#btAjuda').onclick=()=>{ const a=$('#ajuda');
+  a.style.display = a.style.display==='block'?'none':'block';
+  $('#btAjuda').classList.toggle('on', a.style.display==='block'); };
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea,select')) return;
+  if(e.key==='Escape'){ fecharCard();
+    if(PANO.editando||movelPendente){ movelPendente=null; modoColocar(null); painel(); } }
+  if(e.key==='v'||e.key==='V') $('#btVisita').click();
+  if(e.key==='f'||e.key==='F') $('#btTela').click();
+  if(e.key==='p'||e.key==='P') $('#btFoto').click();
+  if(e.key==='?') $('#btAjuda').click();
+  if(e.key==='b'||e.key==='B'){ ANDAR.conforto=!ANDAR.conforto;
+    aviso(ANDAR.conforto?'Balanço de passo desligado (modo conforto).'
+                        :'Balanço de passo ligado.'); }
+  if(MODO==='pano'&&PANO.estacoes.length>1){
+    if(e.key==='ArrowRight') panoIr((PANO.atual+1)%PANO.estacoes.length);
+    if(e.key==='ArrowLeft')  panoIr((PANO.atual-1+PANO.estacoes.length)%PANO.estacoes.length);
+  }
+});
+
+/* ---------- ponte com o portal ---------- */
+if(parent!==window){ $('#btVoltar').style.display='block'; }
+addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.tipo==='ws:camada-real'&&d.modo) trocarModo(d.modo);
+  if(d.tipo==='ws:atelier-pino'&&d.movel){
+    trocarModo('pano');
+    if(!PANO.estacoes.length){ aviso('Carregue uma foto 360 antes de fixar o móvel.',true); return; }
+    movelPendente={nome:d.movel.nome,preco:d.movel.preco,sku:d.movel.sku,
+      loja:d.movel.loja,dimensoes:d.movel.dimensoes};
+    aviso('"'+d.movel.nome+'" chegou do Atelier. Clique na cena para fixar o pino.');
+    modoColocar(null); painel();
+  }
+});
+
+/* ---------- laço ---------- */
+let ult=performance.now(), fps=60, acumulo=0, quadros=0;
+function laco(){
+  requestAnimationFrame(laco);
+  const agora=performance.now(), dt=Math.min((agora-ult)/1000,0.06); ult=agora;
+
+  /* inércia do olhar */
+  ctl.yaw+=ctl.vy; ctl.pitch+=ctl.vp;
+  ctl.vy*=0.82; ctl.vp*=0.82;
+  if(ctl.auto) ctl.yaw+=dt*0.09;
+
+  if(MODO==='pano') autoTour(dt);
+
+  /* ---- caminhada com peso -------------------------------------------------
+     Antes o deslocamento era binário: a tecla movia a câmera na hora e parava
+     na hora. Isso é o que faz um walkthrough parecer maquete. Agora existe
+     velocidade, aceleração, inércia e balanço de passo — o corpo da pessoa.  */
+  const podeAndar = (MODO==='splat'&&!ctl.orbita) || (MODO==='pano'&&PANO.modo!=='esfera');
+  if(podeAndar){
+    const correndo = !!tecla.ShiftLeft;
+    const agachado = !!tecla.KeyC;
+    const alvoVel = correndo?3.1 : agachado?0.7 : 1.45;   /* m/s reais */
+    const f=new THREE.Vector3(); cam.getWorldDirection(f); f.y=0; f.normalize();
+    const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).normalize();
+    const dir=new THREE.Vector3();
+    if(tecla.KeyW) dir.add(f);
+    if(tecla.KeyS) dir.sub(f);
+    if(tecla.KeyA) dir.sub(r);
+    if(tecla.KeyD) dir.add(r);
+    const andando = dir.lengthSq()>0;
+    if(andando) dir.normalize();
+
+    /* aceleração assimétrica: sai devagar, para rápido — sensação de peso */
+    const acel = andando? 9.0 : 13.0;
+    ANDAR.vel.lerp(dir.multiplyScalar(alvoVel), Math.min(1, acel*dt));
+    if(ANDAR.vel.lengthSq()<1e-5) ANDAR.vel.set(0,0,0);
+    cam.position.addScaledVector(ANDAR.vel, dt);
+
+    /* vertical continua direto: subir e descer é intenção, não caminhada */
+    const vv=(correndo?2.6:1.3)*dt;
+    if(tecla.KeyQ) cam.position.y-=vv;
+    if(tecla.KeyE) cam.position.y+=vv;
+
+    /* balanço de passo: seno duplo, amplitude proporcional à velocidade */
+    const rapidez = ANDAR.vel.length();
+    if(ANDAR.conforto){ ANDAR.fase=0; ANDAR.bob=0; ANDAR.lat=0; }
+    else{
+      ANDAR.fase += dt * (2.9 + rapidez*1.35);
+      const amp = Math.min(rapidez/3.1, 1) * (agachado?0.014:0.028);
+      ANDAR.bob = Math.abs(Math.sin(ANDAR.fase)) * amp;
+      ANDAR.lat = Math.sin(ANDAR.fase*0.5) * amp * 0.55;
+    }
+    /* altura dos olhos: agachar abaixa de verdade */
+    ANDAR.olho += ((agachado?-0.45:0) - ANDAR.olho) * Math.min(1, 9*dt);
+    /* leve abertura de lente ao correr — pressa que o olho sente */
+    const fovAlvo = ANDAR.fovBase + (correndo && rapidez>1.6 ? 4.5 : 0);
+    if(Math.abs(cam.fov-fovAlvo)>0.05){
+      cam.fov += (fovAlvo-cam.fov)*Math.min(1,6*dt); cam.updateProjectionMatrix();
+    }
+    if(MODO==='pano') limiteSala();
+  } else { ANDAR.vel.set(0,0,0); ANDAR.bob=0; ANDAR.lat=0; }
+  aplicarCam();
+  if(podeAndar && (ANDAR.bob||ANDAR.lat||ANDAR.olho)){
+    const lado=new THREE.Vector3(1,0,0).applyQuaternion(cam.quaternion);
+    cam.position.y += ANDAR.bob + ANDAR.olho;
+    cam.position.addScaledVector(lado, ANDAR.lat);
+  }
+
+  if(MODO==='splat'&&SPLAT.n){
+    const pr=renderer.getPixelRatio();
+    SPLAT.mat.uniforms.uFocal.value.set(
+      0.5*cam.projectionMatrix.elements[0]*visor.clientWidth*pr,
+      0.5*cam.projectionMatrix.elements[5]*visor.clientHeight*pr);
+    splatOrdenar(false);
+  }
+  if(MODO==='pano') pinosPos();
+
+  renderer.render(scene,cam);
+
+  quadros++; acumulo+=dt;
+  if(acumulo>0.5){ fps=quadros/acumulo; quadros=0; acumulo=0;
+    $('#hFps').textContent=fps.toFixed(0)+' fps';
+    $('#hInfo').textContent = MODO==='splat'
+      ? (SPLAT.n? SPLAT.n.toLocaleString('pt-BR')+' gaussianas' : 'sem captura')
+      : (PANO.estacoes.length? (PANO.atual+1)+' de '+PANO.estacoes.length+' estações' : 'sem fotos');
+  }
+}
+
+redim(); trocarModo('pano'); laco();
+window.__WS_OK=true;
+
+/* superfície de teste para a suíte automatizada */
+window.WS_REAL={lerSplat,lerPly,covDe,reduzir,exemploSplat,PANO,SPLAT,trocarModo};
+</script>
+</body>
+</html>

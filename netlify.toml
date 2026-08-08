@@ -1,0 +1,11 @@
+# Netlify: aponte o repositório para esta pasta e publique.
+[build]
+  command = "node pipeline/publicar.mjs"
+  publish = "publicar"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"

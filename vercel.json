@@ -1,0 +1,42 @@
+{
+  "buildCommand": "node pipeline/publicar.mjs",
+  "outputDirectory": "publicar",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/mundo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/studio",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/atelier",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/real",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}

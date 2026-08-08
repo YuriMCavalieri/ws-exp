@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WHITE STONE — Plataforma Imersiva</title>
+<style>
+:root{
+  --onix:#0B0D11; --onix2:#141821; --marfim:#F8F6F0; --ouro:#C9A961; --ouro-d:#9C7C3E;
+  --cinza:#8B857A; --linha:rgba(248,246,240,.13);
+  --tr:260ms cubic-bezier(.32,.72,.29,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--onix)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;color:var(--marfim)}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* ---------- barra superior ---------- */
+#bar{position:fixed;top:0;left:0;right:0;height:54px;z-index:60;display:flex;align-items:center;
+  gap:14px;padding:0 18px;background:linear-gradient(180deg,#141821,#0B0D11);
+  border-bottom:1px solid rgba(201,169,97,.18);transform:translateY(-100%);transition:transform var(--tr)}
+#bar.on{transform:none}
+#bar::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,169,97,.45),transparent)}
+.mark{font-family:Georgia,serif;font-style:italic;font-size:14px;letter-spacing:.34em;
+  display:flex;align-items:center;white-space:nowrap;user-select:none}
+.mark::before{content:'';width:6px;height:6px;border-radius:50%;margin-right:12px;
+  background:var(--ouro);box-shadow:0 0 12px rgba(201,169,97,.85)}
+#tabs{display:flex;gap:3px;background:rgba(248,246,240,.05);border:1px solid var(--linha);
+  border-radius:22px;padding:4px;margin-left:8px}
+#tabs button{padding:7px 17px;border-radius:18px;font-size:12.5px;letter-spacing:.03em;
+  color:rgba(248,246,240,.6);transition:all var(--tr);white-space:nowrap}
+#tabs button:hover{color:var(--marfim);background:rgba(248,246,240,.07)}
+#tabs button.on{background:linear-gradient(180deg,#FBF9F4,#E9E4D8);color:#0B0D11;font-weight:650}
+.spacer{margin-left:auto}
+.mini{font-size:10.5px;letter-spacing:.14em;color:rgba(248,246,240,.4);white-space:nowrap}
+#home,#copiar{padding:8px 15px;border-radius:9px;border:1px solid var(--linha);font-size:12.5px;
+  color:rgba(248,246,240,.82);transition:all var(--tr);white-space:nowrap}
+#home:hover,#copiar:hover{border-color:rgba(201,169,97,.55);background:rgba(201,169,97,.10)}
+#copiar{margin-right:2px}
+@media(max-width:700px){#copiar{display:none}}
+
+/* ---------- portal ---------- */
+#portal{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:0;padding:28px;
+  background:radial-gradient(ellipse at 50% 38%,#171C25 0%,#0B0D11 72%);
+  transition:opacity .55s ease,visibility .55s}
+#portal.hide{opacity:0;visibility:hidden;pointer-events:none}
+#pbg{position:absolute;inset:0;pointer-events:none;opacity:.6}
+.card{animation:cardIn .7s cubic-bezier(.22,.9,.3,1) backwards}
+.card:nth-child(1){animation-delay:.08s}.card:nth-child(2){animation-delay:.16s}
+.card:nth-child(3){animation-delay:.24s}.card:nth-child(4){animation-delay:.32s}
+.card:nth-child(5){animation-delay:.40s}.card:nth-child(6){animation-delay:.48s}
+@keyframes cardIn{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
+#portal .logo{animation:fadeD .8s ease backwards}
+#portal .tag{animation:fadeD .8s .12s ease backwards}
+#portal .lead{animation:fadeD .8s .22s ease backwards}
+@keyframes fadeD{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+#portal .logo{font-family:Georgia,serif;font-style:italic;font-size:clamp(24px,4.6vw,40px);
+  letter-spacing:.4em;text-indent:.4em;margin-bottom:6px}
+#portal .tag{font-size:10px;letter-spacing:.55em;color:var(--ouro);text-indent:.55em;margin-bottom:10px}
+#portal .lead{font-size:14px;color:rgba(248,246,240,.5);letter-spacing:.02em;
+  margin-bottom:38px;text-align:center;max-width:520px;line-height:1.65}
+#cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:16px;
+  width:min(1020px,100%)}
+.card{position:relative;text-align:left;border:1px solid var(--linha);border-radius:18px;
+  padding:26px 24px 24px;background:rgba(248,246,240,.035);overflow:hidden;
+  transition:all var(--tr);min-height:212px;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-4px);border-color:rgba(201,169,97,.55);
+  background:rgba(201,169,97,.07);box-shadow:0 22px 60px rgba(0,0,0,.5)}
+.card .n{font-size:10px;letter-spacing:.3em;color:var(--ouro);margin-bottom:14px}
+.card h3{font-family:Georgia,serif;font-style:italic;font-size:20px;font-weight:400;
+  letter-spacing:.02em;margin-bottom:10px}
+.card p{font-size:12.5px;line-height:1.7;color:rgba(248,246,240,.56);flex:1}
+.card .go{margin-top:16px;font-size:11.5px;letter-spacing:.1em;color:var(--ouro);
+  display:flex;align-items:center;gap:8px}
+.card .go::after{content:'→';transition:transform var(--tr)}
+.card:hover .go::after{transform:translateX(5px)}
+.card .glow{position:absolute;inset:-40% 40% 60% -40%;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,169,97,.16),transparent 66%);
+  opacity:0;transition:opacity var(--tr);pointer-events:none}
+.card:hover .glow{opacity:1}
+#foot{margin-top:34px;font-size:10px;letter-spacing:.14em;color:rgba(248,246,240,.26);text-align:center}
+
+#voltarMundo{position:fixed;left:50%;top:64px;transform:translateX(-50%) translateY(-14px);z-index:65;
+  display:none;align-items:center;gap:10px;background:rgba(11,13,17,.86);
+  border:1px solid rgba(201,169,97,.5);border-radius:20px;padding:8px 18px;
+  color:var(--marfim);font-size:12.5px;backdrop-filter:blur(18px);
+  box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;transition:all var(--tr)}
+#voltarMundo.on{display:flex;opacity:1;transform:translateX(-50%)}
+#voltarMundo:hover{border-color:var(--ouro);background:rgba(201,169,97,.14)}
+#voltarMundo .nm{color:var(--ouro);font-weight:600}
+
+/* ---------- palcos ---------- */
+#stage{position:fixed;inset:54px 0 0;z-index:10}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:var(--onix)}
+iframe.on{display:block}
+#load{position:fixed;inset:54px 0 0;z-index:40;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;background:var(--onix)}
+#load.on{display:flex}
+#load .t{font-family:Georgia,serif;font-style:italic;font-size:15px;letter-spacing:.28em;
+  color:rgba(248,246,240,.75)}
+#load .b{width:180px;height:2px;background:rgba(248,246,240,.12);border-radius:2px;overflow:hidden}
+#load .b i{display:block;height:100%;width:38%;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--ouro),transparent);
+  animation:sl 1.2s ease-in-out infinite}
+@keyframes sl{0%{transform:translateX(-110%)}100%{transform:translateX(330%)}}
+
+/* ---------- aviso ---------- */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:70;
+  background:rgba(11,13,17,.9);border:1px solid rgba(201,169,97,.4);color:var(--marfim);
+  padding:11px 20px;border-radius:14px;font-size:12.5px;backdrop-filter:blur(16px);
+  opacity:0;transition:all var(--tr);pointer-events:none;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+@media(max-width:760px){
+  #tabs button{padding:7px 12px;font-size:11.5px}
+  .mini{display:none}
+  .mark{font-size:12px;letter-spacing:.24em}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="mark">WHITE STONE</div>
+  <div id="tabs">
+    <button data-j="mundo">WS GLOBAL 3D</button>
+    <button data-j="studio">WS STUDIO 3D</button>
+    <button data-j="atelier">WS ATELIER</button>
+    <button data-j="real">TOUR 360</button>
+    <button data-j="mint">WALKTHROUGH</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="mini" id="ctx">A RÉGUA DO MERCADO IMOBILIÁRIO</div>
+  <button id="copiar" title="copiar o link desta jornada">Copiar link</button>
+  <button id="home">Início</button>
+</div>
+
+<div id="portal">
+  <canvas id="pbg"></canvas>
+  <div class="logo">WHITE STONE</div>
+  <div class="tag">PLATAFORMA IMERSIVA</div>
+  <div class="lead">Viva o imóvel antes de visitá-lo.<br>Escolha por onde começar.</div>
+  <div id="cards">
+    <button class="card" data-j="mundo">
+      <div class="glow"></div>
+      <div class="n">JORNADA 01</div>
+      <h3>WS Global 3D</h3>
+      <p>Sobrevoe a Vila da Serra em 3D fotorrealista, encontre imóveis pelos pinos, trace rotas, ande pelas ruas e entre nos apartamentos — com clima e vista reais pela janela.</p>
+      <div class="go">COMEÇAR A VOAR</div>
+    </button>
+    <button class="card" data-j="studio">
+      <div class="glow"></div>
+      <div class="n">JORNADA 02</div>
+      <h3>WS Studio 3D</h3>
+      <p>Desenhe a planta ou descreva para a WS IA. Casa ou apartamento, áreas externas, iluminação por ambiente, acabamentos e mobília — e caminhe dentro do seu projeto.</p>
+      <div class="go">ABRIR O STUDIO</div>
+    </button>
+    <button class="card" data-j="atelier">
+      <div class="glow"></div>
+      <div class="n">JORNADA 03</div>
+      <h3>WS Atelier</h3>
+      <p>O estúdio dos móveis, com casa própria. Busque no catálogo por intenção e por perto de você, fotografe de vários ângulos para a IA construir o modelo 3D, e mande a peça para o imóvel.</p>
+      <div class="go">ABRIR O ATELIER</div>
+    </button>
+    <button class="card" data-j="real">
+      <div class="glow"></div>
+      <div class="n">JORNADA 04</div>
+      <h3>WS Tour 360</h3>
+      <p>Aqui o imóvel não é desenhado: é capturado. Suba as fotos 360 e monte o tour do imóvel que existe — ou carregue uma captura em Gaussian Splatting e caminhe dentro da fotografia.</p>
+      <div class="go">CAPTURAR O REAL</div>
+    </button>
+    <button class="card" data-j="mint">
+      <div class="glow"></div>
+      <div class="n">JORNADA 05</div>
+      <h3>WS Walkthrough</h3>
+      <p>Mundos em Gaussian splat com uma malha de colisão invisível por baixo: você caminha dentro da fotografia, mede com dois cliques e atravessa portas entre ambientes. Anexe fotos e gere o seu.</p>
+      <div class="go">ENTRAR E MEDIR</div>
+    </button>
+  </div>
+  <div id="foot">REPRESENTAÇÃO ILUSTRATIVA · NÃO SUBSTITUI PROJETO ARQUITETÔNICO</div>
+</div>
+
+<button id="voltarMundo"><span>◀ Voltar ao mundo</span><span class="nm"></span></button>
+<div id="stage">
+  <iframe id="fMundo"  title="WS Mundo 3D"  allow="fullscreen; pointer-lock"></iframe>
+  <iframe id="fStudio" title="WS Studio 3D" allow="fullscreen; pointer-lock"></iframe>
+  <iframe id="fReal"   title="WS Tour 360" allow="fullscreen; pointer-lock"></iframe>
+  <iframe id="fAtelier" title="WS Atelier" allow="fullscreen"></iframe>
+  <iframe id="fMint"    title="WS Walkthrough" allow="fullscreen; pointer-lock"></iframe>
+</div>
+<div id="load"><div class="t">CARREGANDO</div><div class="b"><i></i></div></div>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const fMundo=$('#fMundo'), fStudio=$('#fStudio'), fReal=$('#fReal'), fAtelier=$('#fAtelier'), fMint=$('#fMint');
+const CARREGADO={mundo:false, studio:false, real:false, atelier:false, mint:false};
+let jornada=null;
+
+function toast(t,ms=4200){
+  const el=$('#toast'); el.textContent=t; el.classList.add('on');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'), ms);
+}
+function loading(on){ $('#load').classList.toggle('on', on); }
+
+function carregar(qual){
+  if(qual==='mundo' && !CARREGADO.mundo){ fMundo.src='WS_MUNDO.html'; CARREGADO.mundo=true; }
+  if(qual==='studio' && !CARREGADO.studio){ fStudio.src='WS_STUDIO.html'; CARREGADO.studio=true; }
+  if(qual==='real'   && !CARREGADO.real){   fReal.src='WS_REAL.html';    CARREGADO.real=true; }
+  if(qual==='atelier'&& !CARREGADO.atelier){fAtelier.src='WS_ATELIER.html'; CARREGADO.atelier=true; }
+  if(qual==='mint'   && !CARREGADO.mint){   fMint.src='WS_MINT.html';       CARREGADO.mint=true; }
+}
+/* pré-carrega o Studio enquanto a pessoa ainda olha o portal — o clique fica instantâneo */
+setTimeout(()=>carregar('studio'), 2600);
+function mostrar(qual, msg, comURL){
+  jornada=qual;
+  sincronizarURL(qual);
+  $('#portal').classList.add('hide');
+  $('#bar').classList.add('on');
+  const jaPronto=CARREGADO[qual]===true;
+  loading(!jaPronto);
+  carregar(qual);
+  fMundo.classList.toggle('on', qual==='mundo');
+  fStudio.classList.toggle('on', qual==='studio');
+  fReal.classList.toggle('on', qual==='real');
+  fAtelier.classList.toggle('on', qual==='atelier');
+  fMint.classList.toggle('on', qual==='mint');
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.j===qual));
+  $('#ctx').textContent = qual==='mundo' ? 'WS GLOBAL 3D · VILA DA SERRA'
+    : qual==='real'    ? 'TOUR 360 · CAPTURA'
+    : qual==='atelier' ? 'WS ATELIER · MÓVEIS'
+    : qual==='mint'    ? 'WALKTHROUGH · SPLAT + COLISOR'
+    : 'WS STUDIO 3D · AUTORIA';
+  setTimeout(()=>loading(false), jaPronto?150:900);
+  if(msg) setTimeout(()=>toast(msg, 6500), 1100);
+}
+function inicio(){
+  jornada=null;
+  sincronizarURL(null);
+  $('#portal').classList.remove('hide');
+  $('#bar').classList.remove('on');
+  [fMundo,fStudio,fReal,fAtelier,fMint].forEach(f=>f.classList.remove('on'));
+}
+
+document.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>mostrar(b.dataset.j,null,true));
+
+/* ---------- link direto por jornada ----------
+   ws.living/?j=real  ·  ws.living/real  ·  #real
+   Serve para o corretor mandar no WhatsApp já abrindo onde interessa.       */
+const JORNADAS=['mundo','studio','atelier','real','mint'];
+function jornadaDaURL(){
+  const u=new URL(location.href);
+  const q=(u.searchParams.get('j')||u.hash.replace('#','')||'').toLowerCase();
+  if(JORNADAS.includes(q)) return q;
+  const cam=u.pathname.split('/').filter(Boolean).pop()||'';
+  const c=cam.replace(/\.html$/,'').toLowerCase();
+  if(JORNADAS.includes(c)) return c;
+  if(c==='tour') return 'real';
+  return null;
+}
+function sincronizarURL(qual){
+  try{
+    const u=new URL(location.href);
+    if(qual) u.searchParams.set('j',qual); else u.searchParams.delete('j');
+    u.hash='';
+    history.replaceState(null,'',u.pathname+u.search);
+  }catch(e){}
+}
+addEventListener('DOMContentLoaded',()=>{
+  const j=jornadaDaURL();
+  if(j) setTimeout(()=>mostrar(j),120);
+});
+addEventListener('popstate',()=>{ const j=jornadaDaURL(); j?mostrar(j):inicio(); });
+$('#home').onclick=inicio;
+$('#copiar').onclick=async()=>{
+  const url=location.origin+location.pathname+(jornada?'?j='+jornada:'');
+  try{ await navigator.clipboard.writeText(url); toast('Link copiado: '+url, 5000); }
+  catch(e){ toast('Copie manualmente: '+url, 9000); }
+};
+
+/* ---------- imóvel do mundo → Studio (experiência única) ---------- */
+let imovelAtivo=null;
+function abrirImovelNoStudio(d){
+  imovelAtivo=d.imovel||null;
+  carregar('studio');
+  mostrar('studio');
+  const enviar=()=>{ try{ fStudio.contentWindow.postMessage({
+      tipo:'ws:carregar-imovel', imovel:d.imovel, space:d.space },'*'); }catch(e){} };
+  enviar(); setTimeout(enviar,900); setTimeout(enviar,2400);
+  const b=document.getElementById('voltarMundo');
+  b.classList.add('on');
+  b.querySelector('.nm').textContent=(d.imovel&&d.imovel.nome)||'imóvel';
+  $('#ctx').textContent='WS STUDIO 3D · '+((d.imovel&&d.imovel.nome)||'IMÓVEL');
+}
+function voltarAoMundo(){
+  document.getElementById('voltarMundo').classList.remove('on');
+  imovelAtivo=null;
+  mostrar('mundo');
+}
+document.getElementById('voltarMundo').onclick=voltarAoMundo;
+
+/* ---------- ponte entre as duas jornadas ---------- */
+addEventListener('message', ev=>{
+  const d=ev.data;
+  if(!d || typeof d!=='object') return;
+  if(d.tipo==='ws:space-model'){
+    carregar('mundo');
+    const enviar=()=>{ try{ fMundo.contentWindow.postMessage(d,'*'); }catch(e){} };
+    enviar(); setTimeout(enviar, 1400); setTimeout(enviar, 3600);
+    toast('Projeto publicado no mundo. Abra "Explorar o mundo" e entre no pino WS One.', 7000);
+  }
+  if(d.tipo==='ws:entrar-imovel') abrirImovelNoStudio(d);
+  /* Entrar no imóvel pelo mundo agora abre o WALKTHROUGH */
+  if(d.tipo==='ws:entrar-walkthrough'){
+    carregar('mint'); mostrar('mint');
+    const enviar=()=>{ try{ fMint.contentWindow.postMessage(d,'*'); }catch(e){} };
+    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    const b=document.getElementById('voltarMundo');
+    b.classList.add('on');
+    b.querySelector('.nm').textContent=(d.imovel&&d.imovel.nome)||'imóvel';
+    toast('Carregando o walkthrough de '+((d.imovel&&d.imovel.nome)||'imóvel')+'…', 6000);
+  }
+  if(d.tipo==='ws:voltar-mundo') voltarAoMundo();
+  if(d.tipo==='ws:ir-para-studio') mostrar('studio');
+  if(d.tipo==='ws:ir-para-mundo'){
+    mostrar('mundo','Clique no pino do empreendimento e escolha "Entrar no imóvel" para caminhar pelo seu projeto.');
+  }
+  /* ---- Atelier envia a peça para o destino escolhido ---- */
+  if(d.tipo==='ws:atelier-movel'){
+    carregar('studio'); mostrar('studio');
+    const enviar=()=>{ try{ fStudio.contentWindow.postMessage(d,'*'); }catch(e){} };
+    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    toast('"'+(d.movel&&d.movel.nome||'móvel')+'" foi para o catálogo do Studio.', 6000);
+  }
+  if(d.tipo==='ws:atelier-pino'){
+    carregar('real'); mostrar('real');
+    const enviar=()=>{ try{ fReal.contentWindow.postMessage(d,'*'); }catch(e){} };
+    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    toast('Agora clique na cena para posicionar o pino de "'+(d.movel&&d.movel.nome||'móvel')+'".', 7000);
+  }
+  if(d.tipo==='ws:abrir-atelier'){
+    mostrar('atelier');
+    const abrir=()=>{ try{ fAtelier.contentWindow.postMessage(
+      {tipo:'ws:atelier-abrir', aba:d.aba||'catalogo'},'*'); }catch(e){} };
+    setTimeout(abrir,900); setTimeout(abrir,2200);
+  }
+});
+
+/* ---------- fundo vivo: partículas douradas em deriva lenta ---------- */
+(function(){
+  const cv=document.getElementById('pbg');
+  const cx=cv.getContext('2d');
+  let W,H,pts=[];
+  const N=46;
+  function size(){
+    W=cv.width=innerWidth; H=cv.height=innerHeight;
+    if(!pts.length) for(let i=0;i<N;i++) pts.push({
+      x:Math.random()*W, y:Math.random()*H,
+      r:0.6+Math.random()*1.8, a:0.08+Math.random()*0.3,
+      vx:(Math.random()-0.5)*0.14, vy:-0.05-Math.random()*0.16,
+      tw:Math.random()*6.28 });
+  }
+  size(); addEventListener('resize', size);
+  let raf=null;
+  function tick(t){
+    if(document.getElementById('portal').classList.contains('hide')){ raf=null; return; }
+    cx.clearRect(0,0,W,H);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.y<-4){ p.y=H+4; p.x=Math.random()*W; }
+      if(p.x<-4) p.x=W+4; if(p.x>W+4) p.x=-4;
+      const tw=0.55+0.45*Math.sin(t/900+p.tw);
+      cx.beginPath();
+      cx.fillStyle=`rgba(201,169,97,${(p.a*tw).toFixed(3)})`;
+      cx.arc(p.x,p.y,p.r,0,7);
+      cx.fill();
+    }
+    raf=requestAnimationFrame(tick);
+  }
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    raf=requestAnimationFrame(tick);
+    new MutationObserver(()=>{
+      const esc=document.getElementById('portal').classList.contains('hide');
+      if(!esc && !raf) raf=requestAnimationFrame(tick);
+    }).observe(document.getElementById('portal'),{attributes:true});
+  }
+})();
+/* tilt sutil nos cartões */
+document.querySelectorAll('.card').forEach(c=>{
+  c.addEventListener('pointermove', e=>{
+    const r=c.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-0.5, y=(e.clientY-r.top)/r.height-0.5;
+    c.style.transform=`translateY(-4px) perspective(700px) rotateY(${x*4.5}deg) rotateX(${-y*4}deg)`;
+  });
+  c.addEventListener('pointerleave', ()=>{ c.style.transform=''; });
+});
+
+addEventListener('keydown', e=>{
+  if(e.key==='Escape' && jornada) inicio();
+  if(e.key==='1' && e.altKey) mostrar('mundo');
+  if(e.key==='2' && e.altKey) mostrar('studio');
+});
+</script>
+</body>
+</html>
