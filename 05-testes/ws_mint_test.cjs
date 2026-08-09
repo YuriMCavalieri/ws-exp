@@ -420,6 +420,133 @@ t('passagem sem destino sobrevive ao ciclo', () => {
     + 'trata null como "escolha o destino" e undefined como valor valido');
 });
 
+/* ======================================= 9. telemetria de atencao */
+console.log('\ntelemetria de atencao');
+
+t('a atencao e medida por comodo', () => {
+  certo(/const ATENCAO=\{/.test(JS), 'sem estrutura de atencao');
+  certo(/function atencaoEntrar\(/.test(JS), 'sem troca de comodo cronometrada');
+  /* o cronômetro começa quando a cena APARECE, não quando o download começa:
+     esperar 40 MB não é visitar o ambiente */
+  const i = JS.indexOf("window.__WS_OK=true");
+  const j = JS.indexOf('atencaoEntrar(a.id)');
+  certo(j > i && j - i < 400,
+    'atencaoEntrar deveria ser chamada logo apos a cena ficar visivel');
+});
+
+t('o relogio para quando a aba some', () => {
+  certo(/visibilitychange/.test(JS),
+    'sem isso, uma aba esquecida aberta a noite inteira grava oito horas na '
+    + 'sala e destroi o sinal de todos os outros imoveis na comparacao');
+  const bloco = (JS.match(/document\.addEventListener\('visibilitychange'[\s\S]*?\}\);/) || [''])[0];
+  certo(/document\.hidden\) atencaoFechar\(\)/.test(bloco), 'aba oculta precisa fechar o trecho');
+});
+
+t('o relogio para quando ninguem mexe', () => {
+  certo(/OCIOSO_APOS_MS/.test(JS), 'sem teto de ociosidade');
+  const bloco = (JS.match(/function atencaoVigiar\(\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/ultimaAcao>OCIOSO_APOS_MS/.test(bloco.replace(/\s/g, '')),
+    'presenca nao e atencao: quem levanta para atender o telefone com o tour '
+    + 'aberto viraria o lead mais quente da base');
+});
+
+t('a sessao e emitida periodicamente e ao sair', () => {
+  certo(/function sessaoEnviar\(/.test(JS), 'sem emissao de sessao');
+  certo(/SESSAO_INTERVALO_MS/.test(JS), 'sem intervalo definido');
+  certo(/'pagehide'[\s\S]{0,80}sessaoEnviar\(true\)/.test(JS),
+    'o navegador pode encerrar a pagina sem aviso; pagehide e o ultimo momento confiavel');
+});
+
+t('trocar de imovel zera a medicao', () => {
+  const bloco = (JS.match(/function carregarImovel\(msg\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/ATENCAO\.porAmbiente=Object\.create\(null\)/.test(bloco),
+    'sem zerar, o tempo do imovel anterior soma no proximo e os dois ficam errados');
+});
+
+t('o vigia de atencao nao roda a cada quadro', () => {
+  const laco = (JS.match(/function laco\(\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/relogio>=1/.test(laco),
+    'verificar ociosidade 60x por segundo e desperdicio dentro do laco que '
+    + 'precisa caber em 16 ms');
+});
+
+/* --------------------------------------------------------------------------
+   Executa o cronometro de verdade, com relogio controlado, e confere que as
+   duas travas funcionam. Um teste que so procura a string "visibilitychange"
+   nao distingue "trata" de "menciona".
+-------------------------------------------------------------------------- */
+t('o cronometro conta, troca de comodo e respeita as duas travas', () => {
+  const pega = (nome) => {
+    const m = JS.match(new RegExp('function ' + nome + '\\([^)]*\\)\\{[\\s\\S]*?\\n\\}'));
+    certo(m, nome + ' nao encontrada');
+    return m[0];
+  };
+  const constAtencao = (JS.match(/const ATENCAO=\{[\s\S]*?\n\};/) || [''])[0];
+  certo(constAtencao, 'const ATENCAO nao encontrada');
+  const constOcioso = (JS.match(/const OCIOSO_APOS_MS=\d+;/) || [''])[0];
+
+  const fabrica = new Function('performance', 'document', 'AMBIENTES', `
+    ${constAtencao}
+    ${constOcioso}
+    ${pega('atencaoFechar')}
+    ${pega('atencaoAbrir')}
+    ${pega('atencaoEntrar')}
+    ${pega('atencaoVigiar')}
+    ${pega('atencaoAgora')}
+    return { ATENCAO, atencaoEntrar, atencaoVigiar, atencaoAgora, atencaoFechar,
+             marcar: () => { ATENCAO.ultimaAcao = performance.now(); atencaoAbrir(); } };
+  `);
+
+  let agora = 0;
+  const relogio = { now: () => agora };
+  const doc = { hidden: false };
+  const ambientes = [{ id: 'sala', nome: 'Sala' }, { id: 'cozinha', nome: 'Cozinha' }];
+  const api = fabrica(relogio, doc, ambientes);
+  const avanca = (s) => { agora += s * 1000; };
+
+  /* --- conta o tempo do comodo em que se esta --- */
+  api.atencaoEntrar('sala');
+  avanca(30); api.marcar();          /* mexeu aos 30 s */
+  avanca(10);
+  certo(api.atencaoAgora().porId.sala === 40,
+    'esperava 40 s na sala, veio ' + api.atencaoAgora().porId.sala);
+
+  /* --- trocar de comodo fecha um trecho e abre outro --- */
+  api.atencaoEntrar('cozinha');
+  avanca(15);
+  let r = api.atencaoAgora();
+  certo(r.porId.sala === 40, 'o tempo da sala mudou depois de sair dela');
+  certo(r.porId.cozinha === 15, 'esperava 15 s na cozinha, veio ' + r.porId.cozinha);
+  certo(r.total === 55, 'total errado: ' + r.total);
+
+  /* --- TRAVA 1: ociosidade --- */
+  avanca(300);                        /* cinco minutos sem tocar em nada */
+  api.atencaoVigiar();
+  avanca(300);
+  r = api.atencaoAgora();
+  certo(r.porId.cozinha <= 15 + 45,
+    'ociosidade nao travou: dez minutos parado viraram ' + r.porId.cozinha + ' s de atencao');
+
+  /* --- volta a mexer: conta de novo --- */
+  const antes = api.atencaoAgora().porId.cozinha;
+  api.marcar(); avanca(20);
+  certo(api.atencaoAgora().porId.cozinha === antes + 20,
+    'depois de voltar a mexer o cronometro deveria retomar');
+
+  /* --- TRAVA 2: aba oculta --- */
+  const antesDeSumir = api.atencaoAgora().porId.cozinha;
+  doc.hidden = true;
+  api.atencaoFechar();                /* exatamente o que o visibilitychange faz */
+  avanca(3600);                       /* uma hora com a aba escondida */
+  certo(api.atencaoAgora().porId.cozinha === antesDeSumir,
+    'uma hora de aba oculta virou atencao — o sinal de toda a base fica incomparavel');
+
+  /* --- nomes legiveis para quem consome --- */
+  doc.hidden = false; api.marcar();
+  certo(api.atencaoAgora().porNome.Cozinha === api.atencaoAgora().porId.cozinha,
+    'porNome deveria espelhar porId usando o nome do ambiente');
+});
+
 console.log('\n' + '─'.repeat(58));
 if (falhas.length) {
   console.log('  ' + ok + ' passaram, ' + falhas.length + ' FALHARAM\n');

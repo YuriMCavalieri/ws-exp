@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /c/Users/Cavalieri/Downloads/white-stone *)",
+      "Read(//c/Users/Cavalieri/Downloads/white-stone/**)",
+      "Bash(node -p \"require\\('./node_modules/three/package.json'\\).version\")",
+      "Read(//c/Users/Cavalieri/Downloads/white-stone/docs/**)"
+    ]
+  }
+}

@@ -19,7 +19,8 @@
     "test:studio": "node 05-testes/ws_audit.cjs",
     "publicar": "node 07-referencia/publicar.mjs",
     "servir": "node 07-referencia/servir.mjs",
-    "test:contrato": "node 05-testes/ws_contrato_test.cjs"
+    "test:contrato": "node 05-testes/ws_contrato_test.cjs",
+    "publicar:camadas": "node 07-referencia/publicar-camadas.mjs"
   },
   "devDependencies": {
     "jsdom": "^25.0.1"

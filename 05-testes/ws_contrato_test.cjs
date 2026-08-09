@@ -158,7 +158,7 @@ t('todo evento camada->app que o schema descreve e conhecido pelo bridge', () =>
   const conhecidos = (BRIDGE.match(/EVENTOS_CONHECIDOS = new Set\(\[[\s\S]*?\]\)/) || [''])[0];
   /* comandos app->camada nao passam pelo receptor do bridge */
   const comandos = new Set(['ws:carregar-imovel', 'ws:pedir-space', 'ws:ir-para',
-    'ws:atelier-abrir', 'ws:pedir-walkthrough']);
+    'ws:atelier-abrir', 'ws:pedir-walkthrough', 'ws:pedir-sessao']);
   const faltando = tiposDoSchema
     .filter(x => !comandos.has(x))
     .filter(x => !conhecidos.includes(x));

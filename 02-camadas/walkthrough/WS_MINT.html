@@ -570,6 +570,9 @@ async function abrirAmbiente(i){
   hud('ambiente pronto');
   $('#carga').style.display='none';
   window.__WS_OK=true;
+  /* o cronômetro do cômodo começa quando a cena aparece, não quando o download
+     começa: esperar 40 MB não é visitar o ambiente */
+  atencaoEntrar(a.id);
   vigiaArmar();
   /* só depois de a cena estar visível: recorte é enfeite, não pode bloquear */
   setTimeout(()=>{ try{ aplicarRecorte(); }catch(e){} },60);
@@ -663,7 +666,10 @@ function abrirCard(i){
   $('#cardX').onclick=fecharCard;
   $('#cardAdd').onclick=()=>{ if(!CART.find(x=>x.sku===m.sku)) CART.push({...m});
     $('#cardAdd').textContent='no carrinho ✓';
-    enviarAoApp({tipo:'ws:carrinho', itens:CART}); };
+    enviarAoApp({tipo:'ws:carrinho', itens:CART});
+    /* pôr algo no carrinho é o sinal de intenção mais forte da experiência:
+       vale gravar a sessão junto, sem esperar o intervalo */
+    sessaoEnviar(true); };
 }
 function fecharCard(){ cardAberto=null; const c=$('#mcard'); if(c) c.style.display='none'; }
 
@@ -1207,8 +1213,14 @@ addEventListener('keydown',e=>{
 const VERSAO_CONTRATO=1;
 const CAMADA='walkthrough';
 
+/* As origens das APLICAÇÕES que podem comandar esta camada. Duas marcas rodam
+   o mesmo produto (White Stone e Mafuz) e as duas embutem as mesmas camadas.
+   Constante no código de propósito — ver o cabeçalho desta seção. */
 const ORIGENS_APP=[
-  'https://app.whitestone.living',
+  'https://whitestone.living',
+  'https://www.whitestone.living',
+  'https://mafuz.com.br',
+  'https://www.mafuz.com.br',
   'https://staging.whitestone.living',
 ];
 /* Em desenvolvimento a camada e a aplicação compartilham a origem. Só vale
@@ -1293,6 +1305,154 @@ function modeloMudou(){
   },1500);
 }
 
+/* ==========================================================================
+   TELEMETRIA DE ATENÇÃO — quanto tempo a pessoa passou em cada cômodo
+   ==========================================================================
+   O Tour 360 media isso desde sempre; o Walkthrough não media nada. É a lacuna
+   mais cara do sistema, porque o walkthrough é justamente a camada onde a
+   pessoa PASSA TEMPO — e "88 segundos na sala, 41 na cozinha" é sinal de
+   intenção qualitativamente diferente de "clicou no anúncio". Alimenta o WSI,
+   a qualificação do lead e o motor de recomendação.
+
+   Duas decisões que fazem a diferença entre medir e fingir que mede:
+
+   1. O RELÓGIO PARA QUANDO A ABA SOME. Sem isso, uma aba esquecida aberta a
+      noite inteira grava oito horas na sala e destrói o sinal de todos os
+      outros imóveis na hora de comparar.
+
+   2. O RELÓGIO PARA QUANDO NINGUÉM MEXE. Presença não é atenção. Sem teto de
+      ociosidade, quem levanta para atender o telefone com o tour aberto vira o
+      lead mais quente da base. 45 s sem nenhum input encerra o trecho; o
+      próximo movimento começa outro.
+
+   O que sai daqui é sempre segundos de atenção ATIVA, e é por isso que o
+   número pode ser comparado entre imóveis. */
+
+const ATENCAO={
+  porAmbiente:Object.create(null),  /* id do ambiente -> segundos acumulados */
+  atual:null,                       /* ambiente sendo cronometrado agora     */
+  desde:0,                          /* performance.now() do trecho corrente  */
+  ultimaAcao:0,                     /* último input do usuário               */
+  contando:false,
+};
+const OCIOSO_APOS_MS=45000;
+
+/**
+ * Fecha o trecho corrente e o credita ao cômodo.
+ *
+ * `ate` é o instante em que a atenção terminou de verdade. Fechar por
+ * ociosidade PRECISA passar um corte: sem isso o trecho é creditado até agora, e
+ * os minutos de ausência que motivaram o fechamento entram como atenção — o
+ * defeito volta inteiro, só que mais difícil de ver, porque o teto de
+ * ociosidade parece estar lá.
+ *
+ * O corte é `última ação + carência`, nunca a última ação seca. Entrar num
+ * cômodo e olhar em volta por vinte segundos sem tocar em nada É atenção —
+ * cortar no último clique jogaria fora justamente a observação parada, que num
+ * tour é o comportamento mais valioso que existe. A carência conta; o que vem
+ * depois dela, não.
+ */
+function atencaoFechar(ate){
+  if(!ATENCAO.contando||!ATENCAO.atual) return;
+  const fim=Math.min(typeof ate==='number'?ate:performance.now(), performance.now());
+  const s=(fim-ATENCAO.desde)/1000;
+  if(s>0.25) ATENCAO.porAmbiente[ATENCAO.atual]=(ATENCAO.porAmbiente[ATENCAO.atual]||0)+s;
+  ATENCAO.contando=false;
+}
+function atencaoAbrir(){
+  if(ATENCAO.contando||!ATENCAO.atual) return;
+  if(document.hidden) return;
+  ATENCAO.desde=performance.now();
+  ATENCAO.contando=true;
+}
+/* trocar de cômodo fecha o trecho anterior e abre o próximo */
+function atencaoEntrar(id){
+  if(id===ATENCAO.atual) return;
+  atencaoFechar();
+  ATENCAO.atual=id;
+  ATENCAO.ultimaAcao=performance.now();
+  atencaoAbrir();
+}
+function marcarAcao(){
+  ATENCAO.ultimaAcao=performance.now();
+  atencaoAbrir();                   /* voltou a mexer: retoma a contagem */
+}
+/* Um input qualquer conta como presença. `pointermove` só no canvas: mouse
+   passeando pelo painel lateral não é atenção ao ambiente. */
+['keydown','wheel','pointerdown'].forEach(e=>addEventListener(e,marcarAcao,{passive:true}));
+cv.addEventListener('pointermove',marcarAcao,{passive:true});
+addEventListener('blur',atencaoFechar);
+addEventListener('focus',marcarAcao);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) atencaoFechar(); else marcarAcao();
+});
+/* o navegador pode encerrar a página sem aviso: pagehide é o último momento
+   confiável para fechar o trecho e mandar o que foi medido */
+addEventListener('pagehide',()=>{ atencaoFechar(); sessaoEnviar(true); });
+
+function atencaoVigiar(){
+  if(!ATENCAO.contando) return;
+  /* credita até o fim da carência, não até agora — ver atencaoFechar */
+  if(performance.now()-ATENCAO.ultimaAcao>OCIOSO_APOS_MS)
+    atencaoFechar(ATENCAO.ultimaAcao+OCIOSO_APOS_MS);
+}
+
+/** Segundos por ambiente, com o trecho em curso somado sem fechá-lo. */
+function atencaoAgora(){
+  const fora={...ATENCAO.porAmbiente};
+  if(ATENCAO.contando&&ATENCAO.atual){
+    /* o vigia roda uma vez por segundo; entre duas passagens dele o trecho em
+       curso pode já estar ocioso. Aplicar o mesmo corte aqui evita que uma
+       leitura feita nesse intervalo reporte tempo que o vigia vai descartar. */
+    const fim=Math.min(performance.now(), ATENCAO.ultimaAcao+OCIOSO_APOS_MS);
+    const s=Math.max(0,fim-ATENCAO.desde)/1000;
+    fora[ATENCAO.atual]=(fora[ATENCAO.atual]||0)+s;
+  }
+  /* nomes legíveis: quem consome o dado não deveria precisar do mapa de ids */
+  const porNome={};
+  for(const [id,s] of Object.entries(fora)){
+    const a=AMBIENTES.find(x=>x.id===id);
+    porNome[(a&&a.nome)||id]=Math.round(s);
+  }
+  return {porId:Object.fromEntries(Object.entries(fora).map(([k,v])=>[k,Math.round(v)])),
+          porNome, total:Math.round(Object.values(fora).reduce((t,v)=>t+v,0))};
+}
+
+/* ------------------------------------------------------ sessão do visitante
+   Onde a pessoa parou, o que olhou e o que colocou no carrinho. Diferente do
+   modelo autoral: isto é descartável, mas é o que faz a segunda visita parecer
+   continuação em vez de recomeço — e é o que a tabela walkthrough_sessoes
+   recebe do lado da aplicação. */
+let tSessao=0;
+const SESSAO_INTERVALO_MS=15000;
+
+function sessaoPacote(){
+  const a=AMBIENTES[EST.atual]||{};
+  const at=atencaoAgora();
+  return {
+    tipo:'ws:walkthrough-sessao',
+    imovelId:(IMOVEL&&IMOVEL.id)||null,
+    ambienteId:a.id||null,
+    camera:{x:+cam.position.x.toFixed(3), y:+cam.position.y.toFixed(3),
+            z:+cam.position.z.toFixed(3), yaw:+ctl.yaw.toFixed(4),
+            pitch:+ctl.pitch.toFixed(4), orbita:ctl.orbita},
+    atencao:at.porNome,
+    atencaoPorId:at.porId,
+    tempoTotalS:at.total,
+    carrinho:CART.map(m=>({sku:m.sku, nome:m.nome, preco:m.preco})),
+  };
+}
+function sessaoEnviar(agora){
+  if(!EMBUTIDO) return;
+  const t=performance.now();
+  if(!agora && t-tSessao<SESSAO_INTERVALO_MS) return;
+  /* nada medido ainda: não vale acordar a aplicação para dizer zero */
+  const p=sessaoPacote();
+  if(!agora && p.tempoTotalS<1) return;
+  tSessao=t;
+  enviarAoApp(p);
+}
+
 /* --------------------------------------------------- entrada de comandos -- */
 let IMOVEL=null;
 
@@ -1322,6 +1482,12 @@ function carregarImovel(msg){
       'do imóvel — mostrar outro espaço sob o nome deste seria pior que não mostrar nada.');
     return;
   }
+
+  /* Imóvel novo, sessão nova. Sem zerar, o tempo do imóvel anterior seria
+     somado ao próximo e os dois números ficariam errados de uma vez. */
+  atencaoFechar();
+  ATENCAO.porAmbiente=Object.create(null);
+  ATENCAO.atual=null; tSessao=0;
 
   IMOVEL=im;
   AMBIENTES.length=0;
@@ -1355,6 +1521,13 @@ function tratarComando(msg){
         imovelId:(IMOVEL&&IMOVEL.id)||null, modelo:modeloDoWalkthrough()});
       break;
 
+    case 'ws:pedir-sessao':
+      /* a aplicação vai trocar de rota e quer gravar antes de desmontar o
+         iframe — desmontar sem isso perde até 15 s de atenção medida */
+      atencaoFechar();
+      sessaoEnviar(true);
+      break;
+
     case 'ws:ir-para':{
       const alvo=msg.alvo||{};
       const j=AMBIENTES.findIndex(a=>a.id===alvo.ambiente);
@@ -1378,7 +1551,7 @@ addEventListener('message',e=>{
 });
 
 /* ------------------------------------------------------------------ laço -- */
-let ult=performance.now(), quadros=0, acum=0;
+let ult=performance.now(), quadros=0, acum=0, relogio=0;
 function laco(){
   requestAnimationFrame(laco);
   const agora=performance.now(), dt=Math.min((agora-ult)/1000,0.05); ult=agora;
@@ -1434,6 +1607,12 @@ function laco(){
   quadros++; acum+=dt;
   if(acum>0.5){ const fps=quadros/acum; quadros=0; acum=0;
     const p=document.getElementById('pFps'); if(p) p.textContent=fps.toFixed(0)+' fps'; }
+
+  /* Uma vez por segundo basta: o teto de ociosidade é de 45 s e a sessão sai a
+     cada 15 s. Rodar isso a 60 fps seria 59 verificações jogadas fora por
+     segundo dentro do laço que precisa caber em 16 ms. */
+  relogio+=dt;
+  if(relogio>=1){ relogio=0; atencaoVigiar(); sessaoEnviar(false); }
 }
 
 /* ---------------------------------------------------------------- partida --

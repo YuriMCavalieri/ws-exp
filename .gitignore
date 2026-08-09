@@ -8,6 +8,7 @@ ws-config.json
 # dependências e build
 node_modules/
 publicar/
+publicar-camadas/
 dist/
 .cache/
 

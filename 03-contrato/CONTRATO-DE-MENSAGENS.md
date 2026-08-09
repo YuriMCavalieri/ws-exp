@@ -168,6 +168,38 @@ ver `04-servidor/SCHEMA-COBRANCA.sql`), e devolver o modelo no
 > banco, nem tipo de mensagem que o representasse. Sem isto, "a experiência
 > completa" é uma sessão de demonstração, não um produto.
 
+### `ws:walkthrough-sessao` — quanto tempo em cada cômodo
+Emitido a cada ~15 s de visita, quando o carrinho muda, e ao sair da página.
+
+```json
+{ "tipo": "ws:walkthrough-sessao", "v": 1, "camada": "walkthrough",
+  "imovelId": "WS-V-0142",
+  "ambienteId": "cozinha",
+  "camera": { "x": 1.4, "y": 1.6, "z": -2.2, "yaw": 0.8, "pitch": -0.1, "orbita": false },
+  "atencao": { "Sala": 88, "Cozinha": 41, "Suíte": 63 },
+  "atencaoPorId": { "sala": 88, "cozinha": 41, "suite": 63 },
+  "tempoTotalS": 192,
+  "carrinho": [ { "sku": "sofa-1", "nome": "Sofá retrátil", "preco": 4890 } ] }
+```
+
+**Estes segundos são de atenção *ativa*, e é isso que os torna comparáveis entre
+imóveis.** O relógio para quando a aba fica oculta e quando ninguém mexe por mais
+de 45 s. Sem as duas travas, uma aba esquecida aberta a noite inteira gravaria
+oito horas na sala e destruiria o sinal de todo o resto da base na hora de
+comparar; e quem levanta para atender o telefone viraria o lead mais quente.
+
+**Do lado da aplicação:** gravar em `walkthrough_sessoes`, reconciliando por
+`anon_id` quando o visitante anônimo fizer login. `camera` é o que permite
+retomar a visita onde parou. `atencao` alimenta a qualificação do lead, o WSI e o
+motor de recomendação.
+
+Use `ws:pedir-sessao` antes de desmontar o iframe — sem isso perdem-se até 15 s
+de atenção medida.
+
+⚠️ **LGPD:** `atencao` e `carrinho` associados a um usuário identificado são dado
+pessoal de comportamento. Não podem trafegar em URL nem ir para log de cliente.
+Coletar sob `anon_id` de dispositivo antes do login é a forma segura.
+
 ### `ws:pedido-mundo` — geração sem servidor ligado
 Emitido pelo Walkthrough quando o usuário pede um ambiente novo e não há
 `window.WS_MUNDO_ENDPOINT` configurado.
@@ -273,6 +305,7 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 | `ws:entrar-walkthrough` | camada → app | `imovel` | não — é navegação |
 | `ws:carrinho` | camada → app | `itens[]` | sim, com debounce |
 | `ws:walkthrough-modelo` | camada → app | `modelo`, `imovelId` | **sim — `walkthrough_modelos`** |
+| `ws:walkthrough-sessao` | camada → app | `atencao`, `camera`, `carrinho` | **sim — `walkthrough_sessoes`** |
 | `ws:pedido-mundo` | camada → app | `pedido` (sem as fotos) | não — é aviso |
 | `ws:atelier-movel` | camada → app | `item` | sim |
 | `ws:atelier-pino` | camada → app | `item` | sim |
@@ -286,6 +319,7 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 | `ws:ir-para` | app → camada | `alvo` | — |
 | `ws:atelier-abrir` | app → camada | `filtro` | — |
 | `ws:pedir-walkthrough` | app → camada | `imovelId` | — |
+| `ws:pedir-sessao` | app → camada | — | — |
 
 ---
 
@@ -296,6 +330,7 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 | `ws:lead` | gravar em `leads` | qualificar → rotear → agendar → **iniciar SLA do WS Score** |
 | `ws:space-model` | gravar `jsonb` | versionar, calcular WSI do projeto, gerar thumbnail |
 | `ws:walkthrough-modelo` | gravar `jsonb` | versionar; devolver no `ws:carregar-imovel` seguinte |
+| `ws:walkthrough-sessao` | gravar `atencao` | retomar onde parou; alimentar WSI, lead e recomendação |
 | `ws:carrinho` | ignorar | agregar em `carrinho_eventos` → sinal de intenção para o matching |
 | `ws:entrar-*` | trocar de rota | registrar em `property_access_events` (já existe no schema) |
 | `ws:atelier-*` | ignorar | alimentar catálogo de fornecedores e comissão de marketplace |

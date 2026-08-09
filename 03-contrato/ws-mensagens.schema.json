@@ -592,6 +592,90 @@
       ]
     },
     {
+      "title": "ws:walkthrough-sessao",
+      "description": "camada -> app. Onde o visitante parou e quanto tempo de atencao ATIVA deu a cada comodo. Emitido a cada ~15 s, ao mudar o carrinho e ao sair da pagina. PERSISTIR: tabela walkthrough_sessoes. Os segundos ja descontam aba oculta e ociosidade acima de 45 s — sao comparaveis entre imoveis.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:walkthrough-sessao"
+        },
+        "camada": {
+          "const": "walkthrough"
+        },
+        "imovelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ambienteId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "comodo em que estava ao emitir"
+        },
+        "camera": {
+          "type": "object",
+          "description": "posicao e orientacao para retomar a visita onde parou",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            },
+            "yaw": {
+              "type": "number"
+            },
+            "pitch": {
+              "type": "number"
+            },
+            "orbita": {
+              "type": "boolean"
+            }
+          }
+        },
+        "atencao": {
+          "type": "object",
+          "description": "segundos de atencao ativa por NOME de comodo — { \"Sala\": 88 }",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "atencaoPorId": {
+          "type": "object",
+          "description": "o mesmo, chaveado pelo id do ambiente — estavel a renomeacao",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "tempoTotalS": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "carrinho": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        }
+      },
+      "required": [
+        "atencao",
+        "tempoTotalS"
+      ]
+    },
+    {
       "title": "ws:carregar-imovel",
       "allOf": [
         {
@@ -745,6 +829,20 @@
       "required": [
         "pedido"
       ]
+    },
+    {
+      "title": "ws:pedir-sessao",
+      "description": "app -> camada. Feche o trecho em curso e emita ws:walkthrough-sessao agora. Use antes de desmontar o iframe: sem isso perdem-se ate 15 s de atencao medida.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:pedir-sessao"
+        }
+      }
     }
   ]
 }

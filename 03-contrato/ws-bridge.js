@@ -32,6 +32,8 @@ const EVENTOS_CONHECIDOS = new Set([
   /* autoria do walkthrough: passagens entre cômodos, pinos de móvel e
      calibração. Antes isso só existia na memória do iframe e sumia no F5. */
   'ws:walkthrough-modelo',
+  /* sessão do visitante: onde parou e quanto tempo passou em cada cômodo */
+  'ws:walkthrough-sessao',
   /* pedido de geração de ambiente sem endpoint ligado — só metadado */
   'ws:pedido-mundo',
 ]);

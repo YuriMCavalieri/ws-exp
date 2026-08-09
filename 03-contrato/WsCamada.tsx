@@ -77,6 +77,23 @@ export interface Midia {
   panoramas?: string[]; fotos?: string[];
 }
 
+/**
+ * Sessão do visitante: onde parou e quanto tempo de atenção ATIVA deu a cada
+ * cômodo. Os segundos já descontam aba oculta e ociosidade acima de 45 s — é
+ * isso que os torna comparáveis entre imóveis.
+ */
+export interface WalkthroughSessao {
+  imovelId: string | null;
+  ambienteId: string | null;
+  camera: { x: number; y: number; z: number; yaw: number; pitch: number; orbita: boolean };
+  /** segundos por NOME de cômodo — { "Sala": 88 } */
+  atencao: Record<string, number>;
+  /** o mesmo, por id — estável à renomeação */
+  atencaoPorId: Record<string, number>;
+  tempoTotalS: number;
+  carrinho: { sku: string; nome: string; preco: number }[];
+}
+
 /** Autoria do tour: como os cômodos se ligam e onde estão os pinos de móvel. */
 export interface WalkthroughModelo {
   v: number;
@@ -97,6 +114,20 @@ export interface Lead {
   quando: string;
 }
 
+/**
+ * O que a aplicação pode PEDIR à camada num momento que ela escolhe.
+ *
+ * Existe por causa de uma ordem que o ciclo de vida do React não permite
+ * expressar: fechar a experiência sem perder o último trecho de atenção. Chame
+ * `pedirSessao()` no handler que fecha e desmonte no quadro seguinte.
+ */
+export interface WsCamadaControle {
+  /** Faz a camada fechar o trecho em curso e emitir `ws:walkthrough-sessao`. */
+  pedirSessao: () => void;
+  /** Faz a camada emitir `ws:walkthrough-modelo` sem esperar o debounce. */
+  pedirModelo: () => void;
+}
+
 interface Props {
   camada: Camada;
   imovel?: Imovel;
@@ -110,6 +141,10 @@ interface Props {
   aoSalvarProjeto?: (space: unknown, imovelId: string) => void;
   /** Autoria do tour mudou: passagens, pinos ou calibração. Persistir. */
   aoSalvarWalkthrough?: (modelo: WalkthroughModelo, imovelId: string | null) => void;
+  /** Atenção por cômodo e posição da câmera. Chega a cada ~15 s e ao sair. */
+  aoMedirSessao?: (sessao: WalkthroughSessao) => void;
+  /** Controle imperativo — ver `WsCamadaControle`. */
+  controle?: React.MutableRefObject<WsCamadaControle | null>;
   aoMudarCarrinho?: (itens: { sku: string; nome: string; preco: number }[]) => void;
   aoNavegar?: (destino: string, dados?: unknown) => void;
   aoErro?: (erro: Error) => void;
@@ -119,9 +154,9 @@ interface Props {
 export function WsCamada({
   camada, imovel, space, midia, walkthrough,
   origem = ORIGEM_CAMADAS,
-  aoReceberLead, aoSalvarProjeto, aoSalvarWalkthrough, aoMudarCarrinho,
-  aoNavegar, aoErro,
-  className,
+  aoReceberLead, aoSalvarProjeto, aoSalvarWalkthrough, aoMedirSessao,
+  aoMudarCarrinho, aoNavegar, aoErro,
+  controle, className,
 }: Props) {
   const ref = useRef<HTMLIFrameElement>(null);
   const bridgeRef = useRef<WsBridge | null>(null);
@@ -151,6 +186,17 @@ export function WsCamada({
       b.em('ws:walkthrough-modelo', (m: any) =>
         aoSalvarWalkthrough?.(m.modelo, m.imovelId ?? null)),
 
+      /* atenção por cômodo e posição da câmera — a cada ~15 s e ao sair */
+      b.em('ws:walkthrough-sessao', (m: any) => aoMedirSessao?.({
+        imovelId: m.imovelId ?? null,
+        ambienteId: m.ambienteId ?? null,
+        camera: m.camera,
+        atencao: m.atencao ?? {},
+        atencaoPorId: m.atencaoPorId ?? {},
+        tempoTotalS: m.tempoTotalS ?? 0,
+        carrinho: m.carrinho ?? [],
+      })),
+
       b.em('ws:carrinho', (m: any) => aoMudarCarrinho?.(m.itens)),
 
       /* navegação — a aplicação decide a rota, a camada só pede */
@@ -160,9 +206,27 @@ export function WsCamada({
         .map(t => b.em(t, (m: any) => aoNavegar?.(t, m))),
     ];
 
+    /* Pedir a sessão AQUI, no cleanup, não funciona — e é uma armadilha
+       convidativa. O React roda o cleanup antes de remover o nó do DOM, então
+       `b.destruir()` já tirou o ouvinte quando a resposta da camada chegaria.
+       O pedido sairia e a resposta cairia no vazio.
+
+       Quem controla o momento é a aplicação: chame `controle.pedirSessao()` no
+       handler que FECHA a experiência, e desmonte no quadro seguinte. */
     return () => { inscricoes.forEach(cancelar => cancelar()); b.destruir(); };
   }, [camada, origem, tratarErro, aoReceberLead, aoSalvarProjeto,
-      aoSalvarWalkthrough, aoMudarCarrinho, aoNavegar]);
+      aoSalvarWalkthrough, aoMedirSessao, aoMudarCarrinho, aoNavegar]);
+
+  /* Controle imperativo para o que depende de ordem: fechar a experiência sem
+     perder o último trecho de atenção medida. */
+  useEffect(() => {
+    if (!controle) return;
+    controle.current = {
+      pedirSessao: () => bridgeRef.current?.enviar('ws:pedir-sessao'),
+      pedirModelo: () => bridgeRef.current?.enviar('ws:pedir-walkthrough'),
+    };
+    return () => { controle.current = null; };
+  }, [controle]);
 
   /* injeta o imóvel assim que houver dado — o bridge enfileira se preciso */
   useEffect(() => {
