@@ -77,6 +77,22 @@ if (pub.status !== 0) {
   rodar('deploy', 'ws_deploy_test.cjs');
 }
 
+/* ------------------------------- camadas: o deploy embutível (Pages)
+   Pasta diferente do `publicar/` de propósito: aquele é a demonstração, com
+   portal e X-Frame-Options de página de topo; esta é o produto embutível, com
+   frame-ancestors e sem portal. Os dois precisam continuar existindo. */
+console.log('\n' + linha() + '\n  deploy embutível das camadas\n' + linha());
+const cam = spawnSync(process.execPath, [path.join(RAIZ, '07-referencia', 'publicar-camadas.mjs')], {
+  cwd: RAIZ, encoding: 'utf8',
+});
+if (cam.status !== 0) {
+  quebrados.push('camadas — publicar-camadas.mjs falhou');
+  console.log('  ✘ publicar-camadas.mjs falhou:\n' + (cam.stderr || cam.stdout));
+} else {
+  console.log('  ✔ publicar-camadas/ gerado');
+  rodar('camadas', 'ws_camadas_deploy_test.cjs');
+}
+
 /* ------------------------------------------------------- studio: exige jsdom */
 if (RAPIDO) {
   pulados.push('audit do Studio (24 testes) — modo rápido; roda no job noturno');

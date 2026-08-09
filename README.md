@@ -31,7 +31,7 @@ geometria a partir de vídeo de baixa qualidade.
 |---|---|
 | Linhas de JavaScript | **12.855** |
 | Linhas de CSS | 1.263 |
-| Testes automatizados | **218** |
+| Testes automatizados | **241** |
 | Tipos de mensagem no contrato | **21** |
 | Dependências de build | **0** |
 
@@ -91,12 +91,47 @@ volta em tela preta. Desmonte de verdade ao trocar de rota; não esconda com
 ## Testes
 
 ```bash
-npm test            # as seis suítes — 218 testes
-npm run test:rapido # as cinco rápidas, sem o Studio
+npm test            # todas as suítes — 241 testes
+npm run test:rapido # as rápidas, sem o Studio
 ```
 
-**218 testes verdes** (Node 22+). Detalhe por suíte, e por que o número saiu de
+**241 testes verdes** (Node 22+). Detalhe por suíte, e por que o número saiu de
 161 para 218, em `05-testes/05-COMO-RODAR-OS-TESTES.md`.
+
+## Publicar
+
+Este repositório tem **dois** destinos, e a diferença entre eles não é cosmética:
+
+```bash
+npm run publicar          # publicar/          → a DEMONSTRAÇÃO
+npm run publicar:camadas  # publicar-camadas/  → o PRODUTO EMBUTÍVEL
+```
+
+**`publicar/`** é o portal + as camadas, para abrir num link e mostrar. É uma
+página de topo, e `X-Frame-Options: SAMEORIGIN` está certo ali.
+
+**`publicar-camadas/`** é só as camadas, para viver numa origem própria e ser
+embutido pela plataforma White Stone. Ali `X-Frame-Options` está **errado** —
+SAMEORIGIN bloquearia justamente a aplicação, que é outro host. Quem autoriza é
+`Content-Security-Policy: frame-ancestors`.
+
+### Cloudflare Pages — o projeto das camadas
+
+```
+Repositório:       este
+Build command:     npm run publicar:camadas
+Output directory:  publicar-camadas
+```
+
+O `<projeto>.pages.dev` que sai daí já é uma origem diferente da aplicação — que
+é a propriedade de que se precisa. Um subdomínio da marca é mais bonito, não
+mais seguro. Na aplicação, aponte `VITE_ORIGEM_CAMADAS` para esse host.
+
+> A lista de quem pode embutir vive em dois lugares que **precisam concordar**:
+> `ORIGENS_APP` em `07-referencia/publicar-camadas.mjs` (vira `frame-ancestors`)
+> e `ORIGENS_APP` dentro do `WS_MINT.html` (de quem a camada aceita comando).
+> Se divergirem, o iframe carrega e ignora tudo — a camada fica "carregando"
+> para sempre. `npm run test:camadas` reprova quando isso acontece.
 
 ## Configuração
 
