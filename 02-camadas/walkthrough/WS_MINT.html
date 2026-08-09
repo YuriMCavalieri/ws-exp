@@ -1226,6 +1226,27 @@ const ORIGENS_APP=[
 /* Em desenvolvimento a camada e a aplicação compartilham a origem. Só vale
    quando a própria camada está em localhost — nunca em produção. */
 const EM_DEV=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const LOCAL=/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+/**
+ * A origem pode comandar esta camada?
+ *
+ * Em produção: só a lista acima, exata.
+ *
+ * Em desenvolvimento: qualquer `localhost`, INCLUSIVE noutra porta. Isso não é
+ * frouxidão — é o que permite rodar o arranjo que espelha produção, com a
+ * aplicação num servidor e as camadas noutro. A versão anterior aceitava só
+ * `location.origin`, que é a porta da CAMADA; com o app em outra porta ela
+ * rejeitava todo comando e ficava "carregando" para sempre, e o desenvolvedor
+ * era empurrado para o arranjo de mesma origem — justamente o que não pode ir
+ * ao ar. A trava é o `EM_DEV`: em qualquer host publicado, isto não vale.
+ */
+function origemPermitida(o){
+  if(ORIGENS_APP.includes(o)) return true;
+  return EM_DEV && LOCAL.test(o);
+}
+/* Lista para EMISSÃO e para a mensagem de diagnóstico. Em dev inclui a própria
+   origem, que cobre o caso de app e camada compartilharem servidor. */
 const ORIGENS=EM_DEV ? ORIGENS_APP.concat(location.origin) : ORIGENS_APP;
 
 const EMBUTIDO = parent!==window;
@@ -1237,7 +1258,7 @@ function origensDeSaida(){
   try{
     if(document.referrer){
       const o=new URL(document.referrer).origin;
-      if(ORIGENS.includes(o)) return [o];
+      if(origemPermitida(o)) return [o];
     }
   }catch(e){}
   return ORIGENS;
@@ -1541,7 +1562,7 @@ function tratarComando(msg){
 }
 
 addEventListener('message',e=>{
-  if(!ORIGENS.includes(e.origin)) return;
+  if(!origemPermitida(e.origin)) return;
   if(e.source!==parent) return;
   const m=e.data;
   if(!m || typeof m!=='object') return;

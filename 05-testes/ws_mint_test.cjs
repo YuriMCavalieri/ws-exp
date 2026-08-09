@@ -232,9 +232,32 @@ t('a camada escuta mensagens', () => {
 
 t('a camada valida a origem e a fonte de quem manda', () => {
   const bloco = (JS.match(/addEventListener\('message',[\s\S]*?\n\}\);/) || [''])[0];
-  certo(/ORIGENS\.includes\(e\.origin\)/.test(bloco), 'sem checagem de e.origin');
+  certo(/origemPermitida\(e\.origin\)/.test(bloco), 'sem checagem de e.origin');
   certo(/e\.source!==parent/.test(bloco.replace(/\s/g, '')),
     'sem checagem de e.source: outra janela ainda conseguiria mandar comando');
+});
+
+t('a folga de localhost vale SO em desenvolvimento', () => {
+  const bloco = (JS.match(/function origemPermitida\(o\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(bloco, 'origemPermitida ausente');
+  /* Em dev, qualquer porta de localhost pode comandar — e o que trava isso em
+     qualquer host publicado e o EM_DEV. Sem ele, bastaria um atacante servir a
+     camada de um host chamado "localhost" para si mesmo... ou pior, a folga
+     valeria em producao e qualquer origem passaria. */
+  certo(/EM_DEV\s*&&/.test(bloco),
+    'a folga de localhost precisa estar presa ao EM_DEV');
+  certo(/ORIGENS_APP\.includes\(o\)/.test(bloco),
+    'a lista exata continua sendo o caminho principal');
+});
+
+t('EM_DEV so e verdade em host local', () => {
+  const linha = (JS.match(/const EM_DEV=[^;]+;/) || [''])[0];
+  certo(linha, 'EM_DEV ausente');
+  certo(linha.includes('localhost') && linha.includes('127'), 'EM_DEV mal definido');
+  certo(/location\.hostname/.test(linha),
+    'EM_DEV precisa olhar o hostname da propria camada — hostname nao inclui '
+    + 'porta nem caminho, entao nao da para forjar com uma URL tipo '
+    + 'https://evil.test/?x=localhost');
 });
 
 t('a lista de origens e constante, nunca vem da URL', () => {

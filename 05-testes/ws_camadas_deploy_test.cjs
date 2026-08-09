@@ -138,7 +138,11 @@ t('nenhuma referencia http:// insegura', () => {
 
 t('o walkthrough publicado valida a origem de quem manda', () => {
   const h = ler('WS_MINT.html');
-  certo(/ORIGENS\.includes\(e\.origin\)/.test(h), 'sem checagem de origem');
+  certo(/origemPermitida\(e\.origin\)/.test(h), 'sem checagem de origem');
+  /* A folga de localhost e so para desenvolvimento; num deploy publicado ela
+     nunca pode valer. Quem prende isso e o EM_DEV. */
+  certo(/EM_DEV\s*&&\s*LOCAL\.test/.test(h),
+    'a folga de localhost escapou do EM_DEV — em producao qualquer origem passaria');
   certo(!/postMessage\([^)]*'\*'\)/.test(h), "postMessage com destino curinga");
 });
 
