@@ -54,6 +54,12 @@ const ORIGENS_APP = [
   'https://www.whitestone.living',
   'https://mafuz.com.br',
   'https://www.mafuz.com.br',
+  /* Onde a aplicação está publicada hoje, enquanto os domínios de marca não
+     respondem em HTTPS. É outro projeto Pages — e como `pages.dev` está na
+     Public Suffix List, os dois não compartilham nem "site" para efeito de
+     cookies: o isolamento que a separação de origem existe para dar continua
+     valendo. Pode sair quando os domínios entrarem no ar. */
+  'https://white-stone.pages.dev',
 ];
 
 /* nome publicado → caminho na árvore-fonte. O pacote publicado é plano. */
@@ -154,6 +160,22 @@ let alertas = 0;
     alertas++;
   } else {
     log('✔ origens do cabeçalho conferem com as da camada');
+  }
+
+  /* O outro sentido. A camada aceitar uma origem que o `frame-ancestors` não
+     libera não trava nada — o navegador barra o iframe ANTES, e a lista da
+     camada nunca chega a ser consultada. Por isso não reprova: staging ou uma
+     origem antiga podem estar ali de propósito.
+
+     Mas é o sentido que passa despercebido. Acrescentar a origem só na camada
+     produz um deploy que parece completo, publica sem uma linha de aviso, e
+     falha com um erro de CSP que aponta para o arquivo errado — foi
+     exatamente o que aconteceu em 2026-08-09 com `white-stone.pages.dev`. */
+  const inalcancaveis = naCamada.filter((o) => !ORIGENS_APP.includes(o));
+  if (inalcancaveis.length) {
+    console.log('  ⚠ a camada aceita origens que o frame-ancestors NÃO libera: ' + inalcancaveis.join(' · '));
+    console.log('    Ali o iframe nem carrega — o navegador barra antes de qualquer mensagem.');
+    console.log('    Se alguma dessas precisa funcionar, acrescente-a a ORIGENS_APP neste script.');
   }
 }
 
