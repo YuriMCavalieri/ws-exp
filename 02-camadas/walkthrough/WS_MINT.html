@@ -1222,6 +1222,11 @@ const ORIGENS_APP=[
   'https://mafuz.com.br',
   'https://www.mafuz.com.br',
   'https://staging.whitestone.living',
+  /* Onde a aplicação está publicada hoje. Precisa estar AQUI e no
+     `frame-ancestors` do _headers: a lista de lá decide se o iframe carrega,
+     esta decide se as mensagens são entregues. Corrigir só uma troca o
+     bloqueio visível por um travamento em "preparando a experiência". */
+  'https://white-stone.pages.dev',
 ];
 /* Em desenvolvimento a camada e a aplicação compartilham a origem. Só vale
    quando a própria camada está em localhost — nunca em produção. */
