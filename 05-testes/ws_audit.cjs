@@ -1,6 +1,16 @@
-// WS AUDIT — suite de testes. Rodar: npm i jsdom && node ws_audit.cjs ../WS_STUDIO.html
-const fs=require('fs');const {JSDOM}=require('jsdom');
-const ARQ=process.argv[2];
+// WS AUDIT — suite de testes do WS Studio.
+//   npm install && npm run test:studio
+//   (ou: node 05-testes/ws_audit.cjs [caminho/para/WS_STUDIO.html])
+//
+// O caminho era obrigatório por argumento, e sem ele a suíte morria num
+// ERR_INVALID_ARG_TYPE antes do primeiro teste. Agora o padrão é a árvore do
+// projeto e o argumento vira o caso excepcional, não o único caminho.
+const fs=require('fs');const path=require('path');const {JSDOM}=require('jsdom');
+const ARQ=process.argv[2]||path.resolve(__dirname,'..','02-camadas','studio-3d','WS_STUDIO.html');
+if(!fs.existsSync(ARQ)){
+  console.error('\n  WS_STUDIO.html nao encontrado em '+ARQ+'\n');
+  process.exit(1);
+}
 const html=fs.readFileSync(ARQ,'utf8');
 let js=html.match(/<script type="module">([\s\S]*?)<\/script>\s*<\/body>/)[1];
 js=js.replace(/^import[^\n]*\n/gm,m=>{
@@ -26,7 +36,7 @@ w.AudioContext=class{constructor(){this.state='running';this.currentTime=0;this.
  createBuffer(){return{getChannelData:()=>new Float32Array(4)}}createBufferSource(){return{connect(){},start(){},stop(){}}}
  createBiquadFilter(){return{connect(){},frequency:{value:0},Q:{value:0}}}createGain(){return{connect(){},gain:{setValueAtTime(){},exponentialRampToValueAtTime(){},value:0}}}
  createOscillator(){return{connect(){},start(){},stop(){},frequency:{setValueAtTime(){},exponentialRampToValueAtTime(){}}}}resume(){}};
-const THREE=require('./ws_three_stub.js');w.__THREE=THREE;
+const THREE=require('./ws_three_stub.cjs');w.__THREE=THREE;
 w.__STUB=new Proxy({},{get:(t,k)=>k==='RectAreaLightUniformsLib'?{init(){}}:class{constructor(){this.target=new THREE.Vector3();this.enabled=true}
  update(){}setSize(){}addPass(){}render(){}dispose(){}setKTX2Loader(){return this}setDRACOLoader(){return this}
  load(){}setTranscoderPath(){return this}setDecoderPath(){return this}detectSupport(){return this}

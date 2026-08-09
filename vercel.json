@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node pipeline/publicar.mjs",
+  "buildCommand": "npm run publicar",
   "outputDirectory": "publicar",
   "cleanUrls": true,
   "rewrites": [

@@ -135,6 +135,54 @@ Emitido a cada mudança de carrinho dentro do Tour 360 ou do Walkthrough.
 É a base do motor de marketplace de mobília. Deve ser **debounced** do lado da
 aplicação — a camada emite a cada clique.
 
+### `ws:walkthrough-modelo` — a autoria do tour
+Emitido quando o usuário muda a **autoria do walkthrough**: cria uma passagem
+entre cômodos, posiciona um pino de móvel, renomeia, precifica, apaga, ou
+acerta a calibração de um ambiente. A camada agrupa a rajada e emite 1,5 s
+depois da última mudança.
+
+```json
+{ "tipo": "ws:walkthrough-modelo", "v": 1,
+  "camada": "walkthrough",
+  "imovelId": "WS-V-0142",
+  "modelo": {
+    "v": 1,
+    "ambientes": [ { "id": "sala", "nome": "Sala", "cal": {}, "crop": 0 } ],
+    "passagens": [ { "de": "sala", "para": "cozinha", "x": 1.2, "y": 0.9, "z": -3.4 } ],
+    "pinos": [ { "ambiente": "sala", "x": 0.4, "y": 0.35, "z": -1.1,
+                 "movel": { "sku": "…", "nome": "Sofá retrátil", "preco": 4890 } } ]
+  } }
+```
+
+**O formato é achatado de propósito**: cada passagem carrega o ambiente de
+origem em `de`, em vez de ficar aninhada dentro dele. É assim que vira linha de
+tabela sem desmontar o JSON — e é assim que o grafo de cômodos fica consultável.
+
+**Do lado da aplicação:** gravar em `walkthrough_modelos` (`jsonb` versionado —
+ver `04-servidor/SCHEMA-COBRANCA.sql`), e devolver o modelo no
+`ws:carregar-imovel` seguinte, no campo `walkthrough`.
+
+> **Por que este tipo existe.** Passagens e pinos viviam só na memória do
+> iframe. O corretor ligava sala → cozinha → suíte, nomeava e precificava os
+> móveis, e perdia tudo ao recarregar a página — não havia caminho nenhum até o
+> banco, nem tipo de mensagem que o representasse. Sem isto, "a experiência
+> completa" é uma sessão de demonstração, não um produto.
+
+### `ws:pedido-mundo` — geração sem servidor ligado
+Emitido pelo Walkthrough quando o usuário pede um ambiente novo e não há
+`window.WS_MUNDO_ENDPOINT` configurado.
+
+```json
+{ "tipo": "ws:pedido-mundo", "v": 1, "camada": "walkthrough",
+  "pedido": { "nome": "…", "prompt": "…", "quantidadeImagens": 3,
+              "custoEstimadoCreditos": 1500,
+              "imagens": [ { "arquivo": "sala-01.jpg", "bytes": 2481234 } ] } }
+```
+
+⚠️ **Este evento nunca carrega as fotos.** Só nome de arquivo e tamanho. As
+imagens em base64 ficam no navegador e sobem pela Edge Function, que é o lado
+autenticado. O schema recusa explicitamente um campo `dado` dentro de `imagens`.
+
 ### `ws:atelier-movel` · `ws:atelier-pino`
 Emitidos quando o usuário envia um móvel do Atelier para o Studio (`-movel`) ou
 para o Tour 360 (`-pino`).
@@ -167,12 +215,39 @@ Injeta um imóvel do banco dentro da camada.
               "preco":0, "wsi":74, "status":"publicado" },
   "space": null,
   "midia": { "splat":"https://cdn…/x.rad", "colisor":"https://cdn…/x.glb",
-             "panoramas":[], "fotos":[] } }
+             "panoramas":[], "fotos":[] },
+  "walkthrough": null }
 ```
+
+**Vários cômodos ligados por passagens.** Para o Walkthrough, `midia.ambientes`
+substitui o atalho `splat`/`colisor` e é o que permite um tour com mais de um
+espaço:
+
+```json
+"midia": { "ambientes": [
+    { "id":"sala",    "nome":"Sala",    "splat":"https://cdn…/sala-lod.rad",
+      "colisor":"https://cdn…/sala.glb", "bytes":42269712, "gerado":false },
+    { "id":"cozinha", "nome":"Cozinha", "splat":"https://cdn…/cozinha-lod.rad",
+      "colisor":"https://cdn…/cozinha.glb" }
+] },
+"walkthrough": { "v":1, "passagens":[ { "de":"sala","para":"cozinha","x":1.2,"y":0.9,"z":-3.4 } ] }
+```
+
+`walkthrough` é o modelo autoral gravado antes — devolvê-lo aqui é o que
+restaura passagens, pinos e calibração.
+
+> **Sem `midia`, a camada recusa.** O Walkthrough não abre o acervo de
+> demonstração quando o imóvel chega sem mídia: ele diz na tela que não há
+> ambiente capturado. Mostrar outro espaço sob o nome do imóvel é precisamente
+> o mal-entendido que o selo de *representação ilustrativa* existe para impedir.
 
 ### `ws:pedir-space`
 Pede à camada que devolva o modelo autoral atual. A camada responde com
 `ws:space-model`. É o padrão pedido/resposta do contrato.
+
+### `ws:pedir-walkthrough`
+O mesmo padrão, para o tour: a camada responde com `ws:walkthrough-modelo`.
+Útil antes de trocar de rota, para gravar a autoria sem esperar o debounce.
 
 ### `ws:ir-para`
 Move a câmera para uma coordenada ou para um ambiente nomeado.
@@ -197,6 +272,8 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 | `ws:entrar-imovel` | camada → app | `imovel`, `space` | não — é navegação |
 | `ws:entrar-walkthrough` | camada → app | `imovel` | não — é navegação |
 | `ws:carrinho` | camada → app | `itens[]` | sim, com debounce |
+| `ws:walkthrough-modelo` | camada → app | `modelo`, `imovelId` | **sim — `walkthrough_modelos`** |
+| `ws:pedido-mundo` | camada → app | `pedido` (sem as fotos) | não — é aviso |
 | `ws:atelier-movel` | camada → app | `item` | sim |
 | `ws:atelier-pino` | camada → app | `item` | sim |
 | `ws:voltar-mundo` | camada → app | — | não |
@@ -208,7 +285,7 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 | `ws:pedir-space` | app → camada | — | — |
 | `ws:ir-para` | app → camada | `alvo` | — |
 | `ws:atelier-abrir` | app → camada | `filtro` | — |
-| `ws:pedido-mundo` | app → camada | `prompt`, `imagens` | — |
+| `ws:pedir-walkthrough` | app → camada | `imovelId` | — |
 
 ---
 
@@ -218,6 +295,7 @@ Abre o Atelier já filtrado por uma categoria ou consulta.
 |---|---|---|
 | `ws:lead` | gravar em `leads` | qualificar → rotear → agendar → **iniciar SLA do WS Score** |
 | `ws:space-model` | gravar `jsonb` | versionar, calcular WSI do projeto, gerar thumbnail |
+| `ws:walkthrough-modelo` | gravar `jsonb` | versionar; devolver no `ws:carregar-imovel` seguinte |
 | `ws:carrinho` | ignorar | agregar em `carrinho_eventos` → sinal de intenção para o matching |
 | `ws:entrar-*` | trocar de rota | registrar em `property_access_events` (já existe no schema) |
 | `ws:atelier-*` | ignorar | alimentar catálogo de fornecedores e comissão de marketplace |

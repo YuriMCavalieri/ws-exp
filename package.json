@@ -1,0 +1,27 @@
+{
+  "name": "ws-plataforma",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Camadas de experiência 3D da White Stone — pacote de integração",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node 05-testes/rodar-tudo.mjs",
+    "test:rapido": "node 05-testes/rodar-tudo.mjs --rapido",
+    "test:walkthrough": "node 05-testes/ws_mint_test.cjs",
+    "test:tour": "node 05-testes/ws_real_test.cjs",
+    "test:atelier": "node 05-testes/ws_atelier_test.cjs",
+    "test:sala": "node 05-testes/ws_sala_test.cjs",
+    "test:deploy": "node 05-testes/ws_deploy_test.cjs",
+    "test:studio": "node 05-testes/ws_audit.cjs",
+    "publicar": "node 07-referencia/publicar.mjs",
+    "servir": "node 07-referencia/servir.mjs",
+    "test:contrato": "node 05-testes/ws_contrato_test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

@@ -31,8 +31,8 @@ geometria a partir de vídeo de baixa qualidade.
 |---|---|
 | Linhas de JavaScript | **12.855** |
 | Linhas de CSS | 1.263 |
-| Testes automatizados | **161** |
-| Tipos de mensagem no contrato | **19** |
+| Testes automatizados | **218** |
+| Tipos de mensagem no contrato | **21** |
 | Dependências de build | **0** |
 
 ## Rodar
@@ -41,11 +41,13 @@ As camadas usam `fetch` para configuração e assets. Navegador nenhum faz `fetc
 de arquivo local — então é preciso um servidor:
 
 ```bash
-cd 01-portal
-python3 -m http.server 8080
+npm install      # uma vez
+npm run servir   # http://localhost:8080
 ```
 
-Abra `http://localhost:8080/index.html`.
+> Não sirva `01-portal/` direto: o portal referencia as camadas por nome ao lado
+> dele, e na árvore-fonte elas moram em `02-camadas/<camada>/`. O `npm run servir`
+> faz a mesma tradução de caminhos que o `npm run publicar`.
 
 ## Estrutura
 
@@ -71,6 +73,9 @@ import { WsCamada } from './contrato/WsCamada';
 <WsCamada
   camada="walkthrough"
   imovel={imovel}
+  midia={{ ambientes: imovel.ambientes }}      // os cômodos navegáveis
+  walkthrough={modeloSalvo}                    // passagens e pinos gravados antes
+  aoSalvarWalkthrough={(m, id) => salvarModelo(id, m)}
   aoReceberLead={lead => salvarLead(lead)}
 />
 ```
@@ -78,18 +83,20 @@ import { WsCamada } from './contrato/WsCamada';
 O componente embute a camada, valida a origem das mensagens, enfileira comandos
 até o `ws:pronto` e expõe os eventos como callbacks.
 
+**Uma camada montada por vez.** Cada iframe carrega um contexto WebGL, e o
+navegador descarta o mais antigo sem avisar quando passam de alguns — a camada
+volta em tela preta. Desmonte de verdade ao trocar de rota; não esconda com
+`display:none`.
+
 ## Testes
 
 ```bash
-cd 05-testes
-node ws_real_test.cjs      # 62
-node ws_atelier_test.cjs   # 37
-node ws_mint_test.cjs      # 21
-node ws_sala_test.cjs      # 20
+npm test            # as seis suítes — 218 testes
+npm run test:rapido # as cinco rápidas, sem o Studio
 ```
 
-**140 testes verdes** nesta estrutura (Node 22.22). As outras duas suítes estão
-descritas em `05-testes/COMO-RODAR.md`.
+**218 testes verdes** (Node 22+). Detalhe por suíte, e por que o número saiu de
+161 para 218, em `05-testes/05-COMO-RODAR-OS-TESTES.md`.
 
 ## Configuração
 
@@ -98,7 +105,11 @@ camada e preencha as chaves. **O arquivo real está no `.gitignore` e nunca deve
 ser versionado.**
 
 As chaves de serviços com custo por chamada vivem em Edge Functions do lado do
-servidor, nunca no navegador — ver `04-servidor/LEIA-ME.md`.
+servidor, nunca no navegador — ver `04-servidor/04-SOBRE-O-SERVIDOR.md`.
+
+As Edge Functions exigem usuário autenticado, debitam créditos antes de chamar
+o fornecedor e estornam se ele falhar. As tabelas e funções SQL que isso supõe
+estão em `04-servidor/SCHEMA-COBRANCA.sql`.
 
 ## Assets
 

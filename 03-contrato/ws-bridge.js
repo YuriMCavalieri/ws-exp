@@ -29,6 +29,18 @@ const EVENTOS_CONHECIDOS = new Set([
   'ws:carrinho', 'ws:atelier-movel', 'ws:atelier-pino',
   'ws:voltar-mundo', 'ws:ir-para-mundo', 'ws:ir-para-studio',
   'ws:abrir-atelier', 'ws:camada-real',
+  /* autoria do walkthrough: passagens entre cômodos, pinos de móvel e
+     calibração. Antes isso só existia na memória do iframe e sumia no F5. */
+  'ws:walkthrough-modelo',
+  /* pedido de geração de ambiente sem endpoint ligado — só metadado */
+  'ws:pedido-mundo',
+]);
+
+/* Eventos que carregam autoria ou conversão e NÃO podem ser perdidos em
+   silêncio. Se ninguém assinou, o bridge avisa: um ws:lead ou um modelo de
+   walkthrough que chega e não encontra ouvinte é dado que evaporou. */
+const EVENTOS_CRITICOS = new Set([
+  'ws:lead', 'ws:space-model', 'ws:walkthrough-modelo',
 ]);
 
 export class WsBridge {
@@ -154,9 +166,17 @@ export class WsBridge {
     }
 
     const fns = this.ouvintes.get(msg.tipo);
-    if (fns) fns.forEach(fn => {
-      try { fn(msg); } catch (e) { this.aoErro(e); }
-    });
+    if (fns && fns.size) {
+      fns.forEach(fn => {
+        try { fn(msg); } catch (e) { this.aoErro(e); }
+      });
+    } else if (EVENTOS_CRITICOS.has(msg.tipo) && !this.ouvintes.has('*')) {
+      this.aoErro(new Error(
+        `${msg.tipo} chegou e nenhum ouvinte estava registrado. ` +
+        `Este evento carrega dado que não se recupera — o usuário fez o ` +
+        `trabalho e ele foi descartado. Registre um ouvinte com bridge.em('${msg.tipo}', …).`
+      ));
+    }
 
     const todos = this.ouvintes.get('*');
     if (todos) todos.forEach(fn => { try { fn(msg); } catch (e) { this.aoErro(e); } });

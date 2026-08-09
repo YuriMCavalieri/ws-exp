@@ -214,6 +214,157 @@
           "items": {
             "type": "string"
           }
+        },
+        "ambientes": {
+          "type": "array",
+          "description": "Um item por comodo navegavel. Quando presente, tem precedencia sobre 'splat'/'colisor', que sao o atalho de ambiente unico.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "splat"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "splat": {
+                "type": "string",
+                "description": ".rad paginado, .splat ou .ply"
+              },
+              "colisor": {
+                "type": "string",
+                "description": "GLB invisivel; sem ele a medicao fica desligada"
+              },
+              "capa": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer"
+              },
+              "gerado": {
+                "type": "boolean",
+                "description": "true = ambiente gerado por IA, nunca imovel real a venda"
+              },
+              "cal": {
+                "type": "object",
+                "properties": {
+                  "rotY": {
+                    "type": "number"
+                  },
+                  "escala": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "walkthroughModelo": {
+      "type": "object",
+      "description": "Autoria do tour: como os comodos se ligam, onde estao os pinos de movel e a calibracao acertada de cada ambiente. Formato achatado de proposito — cada passagem carrega o ambiente de origem, para virar linha de tabela.",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ambientes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nome": {
+                "type": "string"
+              },
+              "gerado": {
+                "type": "boolean"
+              },
+              "crop": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "cal": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "passagens": {
+          "type": "array",
+          "description": "Arestas do grafo de comodos. 'para' nulo = passagem criada e ainda sem destino.",
+          "items": {
+            "type": "object",
+            "required": [
+              "de",
+              "x",
+              "y",
+              "z"
+            ],
+            "properties": {
+              "de": {
+                "type": "string"
+              },
+              "para": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "pinos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "ambiente",
+              "x",
+              "y",
+              "z"
+            ],
+            "properties": {
+              "ambiente": {
+                "type": "string"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              },
+              "movel": {
+                "$ref": "#/$defs/item"
+              }
+            }
+          }
         }
       }
     }
@@ -412,6 +563,35 @@
       }
     },
     {
+      "title": "ws:walkthrough-modelo",
+      "description": "camada -> app. Autoria do tour mudou. PERSISTIR: tabela walkthrough_modelos.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:walkthrough-modelo"
+        },
+        "camada": {
+          "const": "walkthrough"
+        },
+        "imovelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "modelo": {
+          "$ref": "#/$defs/walkthroughModelo"
+        }
+      },
+      "required": [
+        "modelo"
+      ]
+    },
+    {
       "title": "ws:carregar-imovel",
       "allOf": [
         {
@@ -433,6 +613,10 @@
         },
         "midia": {
           "$ref": "#/$defs/midia"
+        },
+        "walkthrough": {
+          "$ref": "#/$defs/walkthroughModelo",
+          "description": "Modelo autoral gravado numa sessao anterior. Restaura passagens, pinos e calibracao."
         }
       },
       "required": [
@@ -486,6 +670,80 @@
       },
       "required": [
         "alvo"
+      ]
+    },
+    {
+      "title": "ws:pedir-walkthrough",
+      "description": "app -> camada. Pede o modelo autoral atual; a camada responde com ws:walkthrough-modelo.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:pedir-walkthrough"
+        },
+        "imovelId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "title": "ws:pedido-mundo",
+      "description": "camada -> app. Pedido de geracao de ambiente quando nao ha endpoint ligado. NUNCA carrega as fotos: elas ficam no navegador e sobem pela Edge Function.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        }
+      ],
+      "properties": {
+        "tipo": {
+          "const": "ws:pedido-mundo"
+        },
+        "camada": {
+          "const": "walkthrough"
+        },
+        "pedido": {
+          "type": "object",
+          "properties": {
+            "nome": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "quantidadeImagens": {
+              "type": "integer"
+            },
+            "custoEstimadoCreditos": {
+              "type": "integer"
+            },
+            "imagens": {
+              "type": "array",
+              "description": "So metadado: nome do arquivo e tamanho. Sem conteudo de imagem.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "arquivo": {
+                    "type": "string"
+                  },
+                  "bytes": {
+                    "type": "integer"
+                  }
+                },
+                "not": {
+                  "required": [
+                    "dado"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "pedido"
       ]
     }
   ]

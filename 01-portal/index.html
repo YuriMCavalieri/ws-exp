@@ -205,15 +205,47 @@ function toast(t,ms=4200){
 }
 function loading(on){ $('#load').classList.toggle('on', on); }
 
-function carregar(qual){
-  if(qual==='mundo' && !CARREGADO.mundo){ fMundo.src='WS_MUNDO.html'; CARREGADO.mundo=true; }
-  if(qual==='studio' && !CARREGADO.studio){ fStudio.src='WS_STUDIO.html'; CARREGADO.studio=true; }
-  if(qual==='real'   && !CARREGADO.real){   fReal.src='WS_REAL.html';    CARREGADO.real=true; }
-  if(qual==='atelier'&& !CARREGADO.atelier){fAtelier.src='WS_ATELIER.html'; CARREGADO.atelier=true; }
-  if(qual==='mint'   && !CARREGADO.mint){   fMint.src='WS_MINT.html';       CARREGADO.mint=true; }
+/* ---------------------------------------------------------------------------
+   CICLO DE VIDA DAS CAMADAS — uma viva por vez
+
+   Antes, `carregar()` só ligava o src e nunca desligava: as cinco camadas
+   ficavam montadas, cada uma com seu contexto WebGL, e a troca de jornada era
+   só visibilidade CSS. Além disso o Studio era pré-carregado aos 2,6 s, então
+   bastava abrir o portal e clicar duas vezes para ter três contextos vivos.
+
+   Navegadores limitam contextos WebGL (o Chrome fica na casa de 8 a 16 e
+   descarta o MAIS ANTIGO sem avisar). O sintoma é a camada voltar em tela
+   preta depois de passear pelas outras — e o vigia da própria camada não
+   consegue explicar, porque para ela nada de errado aconteceu.
+
+   Aqui a regra é a mesma que o documento de auditoria pede ao React: a camada
+   que sai é DESMONTADA de verdade — src limpo, iframe recriado. Não escondida.
+   Custo: voltar para uma camada recarrega. É o preço certo a pagar.
+--------------------------------------------------------------------------- */
+const ARQUIVO={mundo:'WS_MUNDO.html', studio:'WS_STUDIO.html', real:'WS_REAL.html',
+  atelier:'WS_ATELIER.html', mint:'WS_MINT.html'};
+const QUADRO={mundo:fMundo, studio:fStudio, real:fReal, atelier:fAtelier, mint:fMint};
+let VIVA=null;   /* a única camada montada neste instante */
+
+function desmontar(qual){
+  const f=QUADRO[qual]; if(!f || !CARREGADO[qual]) return;
+  /* about:blank antes de remover o src: força o navegador a derrubar o
+     documento e, com ele, o contexto WebGL. Só apagar o src deixa resíduo. */
+  try{ f.src='about:blank'; }catch(e){}
+  try{ f.removeAttribute('src'); }catch(e){}
+  CARREGADO[qual]=false;
+  /* o handshake morre com o documento: a próxima montagem se anuncia de novo */
+  PRONTA[qual]=false; FILA[qual]=[];
 }
-/* pré-carrega o Studio enquanto a pessoa ainda olha o portal — o clique fica instantâneo */
-setTimeout(()=>carregar('studio'), 2600);
+
+function carregar(qual){
+  if(!ARQUIVO[qual]) return;
+  if(VIVA && VIVA!==qual) desmontar(VIVA);
+  if(!CARREGADO[qual]){ QUADRO[qual].src=ARQUIVO[qual]; CARREGADO[qual]=true; }
+  VIVA=qual;
+}
+/* Sem pré-carregamento. Ele ganhava uns 800 ms no primeiro clique e custava um
+   contexto WebGL permanente — troca ruim numa página cujo produto é WebGL. */
 function mostrar(qual, msg, comURL){
   jornada=qual;
   sincronizarURL(qual);
@@ -242,6 +274,8 @@ function inicio(){
   $('#portal').classList.remove('hide');
   $('#bar').classList.remove('on');
   [fMundo,fStudio,fReal,fAtelier,fMint].forEach(f=>f.classList.remove('on'));
+  /* voltar ao portal também libera a GPU: ninguém está olhando a camada */
+  if(VIVA){ desmontar(VIVA); VIVA=null; }
 }
 
 document.querySelectorAll('[data-j]').forEach(b=>b.onclick=()=>mostrar(b.dataset.j,null,true));
@@ -280,15 +314,39 @@ $('#copiar').onclick=async()=>{
   catch(e){ toast('Copie manualmente: '+url, 9000); }
 };
 
+/* ---------------------------------------------------------------------------
+   FILA DE COMANDOS — a versão mínima do que o 03-contrato/ws-bridge.js faz
+
+   O padrão anterior era `enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800)`
+   — mandar três vezes torcendo para que uma pegasse. Isso falha nos dois
+   extremos: numa conexão lenta as três chegam antes da camada existir, e numa
+   rápida a camada recebe o mesmo comando três vezes.
+
+   Aqui o comando espera o ws:pronto da camada. Quem estiver embutindo isto numa
+   aplicação React de verdade deve usar o ws-bridge.js, que além da fila valida
+   origem e versão. Este portal é a referência reduzida.
+--------------------------------------------------------------------------- */
+const ORIGEM=location.origin;   /* portal e camadas são publicados lado a lado */
+const PRONTA={}, FILA={};
+
+function enviarACamada(qual,msg){
+  (FILA[qual]=FILA[qual]||[]).push(msg);
+  if(PRONTA[qual]) escoar(qual);
+}
+function escoar(qual){
+  const f=QUADRO[qual]; if(!f||!f.contentWindow) return;
+  const fila=FILA[qual]||[]; FILA[qual]=[];
+  for(const m of fila){
+    try{ f.contentWindow.postMessage(m,ORIGEM); }catch(e){}
+  }
+}
 /* ---------- imóvel do mundo → Studio (experiência única) ---------- */
 let imovelAtivo=null;
 function abrirImovelNoStudio(d){
   imovelAtivo=d.imovel||null;
-  carregar('studio');
   mostrar('studio');
-  const enviar=()=>{ try{ fStudio.contentWindow.postMessage({
-      tipo:'ws:carregar-imovel', imovel:d.imovel, space:d.space },'*'); }catch(e){} };
-  enviar(); setTimeout(enviar,900); setTimeout(enviar,2400);
+  enviarACamada('studio',{tipo:'ws:carregar-imovel', v:1,
+    imovel:d.imovel, space:d.space});
   const b=document.getElementById('voltarMundo');
   b.classList.add('on');
   b.querySelector('.nm').textContent=(d.imovel&&d.imovel.nome)||'imóvel';
@@ -302,25 +360,57 @@ function voltarAoMundo(){
 document.getElementById('voltarMundo').onclick=voltarAoMundo;
 
 /* ---------- ponte entre as duas jornadas ---------- */
+/* O acervo de walkthrough por imóvel. Num produto de verdade isto vem do banco
+   — é a coluna `midia` do imóvel. Aqui é uma tabela local, para que a jornada
+   mundo → imóvel → walkthrough entregue O IMÓVEL CLICADO e não a demonstração. */
+const WALKTHROUGH_POR_IMOVEL={
+  /* 'WS-V-0142': { ambientes:[{id:'sala',nome:'Sala',splat:'https://…-lod.rad',
+                                colisor:'https://….glb'}] }, */
+};
+
 addEventListener('message', ev=>{
+  /* as camadas são publicadas ao lado do portal: qualquer outra origem é ruído
+     ou tentativa — em nenhum dos casos é comando */
+  if(ev.origin!==ORIGEM) return;
   const d=ev.data;
-  if(!d || typeof d!=='object') return;
+  if(!d || typeof d!=='object' || typeof d.tipo!=='string') return;
+
+  /* ---- handshake: libera a fila daquela camada ---- */
+  if(d.tipo==='ws:pronto'||d.tipo==='ws:mundo-pronto'||d.tipo==='ws:studio-pronto'){
+    const qual = d.tipo==='ws:mundo-pronto' ? 'mundo'
+      : d.tipo==='ws:studio-pronto' ? 'studio'
+      : ({mundo:'mundo',studio:'studio',tour:'real',atelier:'atelier',
+          walkthrough:'mint'}[d.camada]||VIVA);
+    if(qual){ PRONTA[qual]=true; escoar(qual); loading(false); }
+    return;
+  }
+
   if(d.tipo==='ws:space-model'){
-    carregar('mundo');
-    const enviar=()=>{ try{ fMundo.contentWindow.postMessage(d,'*'); }catch(e){} };
-    enviar(); setTimeout(enviar, 1400); setTimeout(enviar, 3600);
+    mostrar('mundo');
+    enviarACamada('mundo',d);
     toast('Projeto publicado no mundo. Abra "Explorar o mundo" e entre no pino WS One.', 7000);
   }
   if(d.tipo==='ws:entrar-imovel') abrirImovelNoStudio(d);
   /* Entrar no imóvel pelo mundo agora abre o WALKTHROUGH */
   if(d.tipo==='ws:entrar-walkthrough'){
-    carregar('mint'); mostrar('mint');
-    const enviar=()=>{ try{ fMint.contentWindow.postMessage(d,'*'); }catch(e){} };
-    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    const im=d.imovel||{};
+    const acervo=WALKTHROUGH_POR_IMOVEL[im.id];
+    mostrar('mint');
     const b=document.getElementById('voltarMundo');
     b.classList.add('on');
-    b.querySelector('.nm').textContent=(d.imovel&&d.imovel.nome)||'imóvel';
-    toast('Carregando o walkthrough de '+((d.imovel&&d.imovel.nome)||'imóvel')+'…', 6000);
+    b.querySelector('.nm').textContent=im.nome||'imóvel';
+
+    if(acervo){
+      enviarACamada('mint',{tipo:'ws:carregar-imovel', v:1, imovel:im,
+        midia:{ambientes:acervo.ambientes}, walkthrough:acervo.modelo||null});
+      toast('Carregando o walkthrough de '+(im.nome||'imóvel')+'…', 6000);
+    }else{
+      /* Sem mídia cadastrada, a camada dirá isso na tela dela. O portal não
+         promete o que não tem: anunciar "carregando o walkthrough de X" e
+         exibir a sala de demonstração foi exatamente o defeito corrigido. */
+      enviarACamada('mint',{tipo:'ws:carregar-imovel', v:1, imovel:im, midia:{}});
+      toast('"'+(im.nome||'Este imóvel')+'" ainda não tem walkthrough capturado.', 7000);
+    }
   }
   if(d.tipo==='ws:voltar-mundo') voltarAoMundo();
   if(d.tipo==='ws:ir-para-studio') mostrar('studio');
@@ -329,22 +419,32 @@ addEventListener('message', ev=>{
   }
   /* ---- Atelier envia a peça para o destino escolhido ---- */
   if(d.tipo==='ws:atelier-movel'){
-    carregar('studio'); mostrar('studio');
-    const enviar=()=>{ try{ fStudio.contentWindow.postMessage(d,'*'); }catch(e){} };
-    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    mostrar('studio');
+    enviarACamada('studio',d);
     toast('"'+(d.movel&&d.movel.nome||'móvel')+'" foi para o catálogo do Studio.', 6000);
   }
   if(d.tipo==='ws:atelier-pino'){
-    carregar('real'); mostrar('real');
-    const enviar=()=>{ try{ fReal.contentWindow.postMessage(d,'*'); }catch(e){} };
-    enviar(); setTimeout(enviar,1200); setTimeout(enviar,2800);
+    mostrar('real');
+    enviarACamada('real',d);
     toast('Agora clique na cena para posicionar o pino de "'+(d.movel&&d.movel.nome||'móvel')+'".', 7000);
   }
   if(d.tipo==='ws:abrir-atelier'){
     mostrar('atelier');
-    const abrir=()=>{ try{ fAtelier.contentWindow.postMessage(
-      {tipo:'ws:atelier-abrir', aba:d.aba||'catalogo'},'*'); }catch(e){} };
-    setTimeout(abrir,900); setTimeout(abrir,2200);
+    enviarACamada('atelier',{tipo:'ws:atelier-abrir', v:1, aba:d.aba||'catalogo'});
+  }
+
+  /* ---- autoria do walkthrough: passagens, pinos e calibração ----
+     No produto isto vai para o Postgres (tabela walkthrough_modelos). O portal
+     é uma referência sem banco, então guarda em memória e diz o que faria —
+     mas o evento PRECISA ser consumido em algum lugar, senão o corretor liga
+     os cômodos e perde o trabalho, que era o comportamento anterior. */
+  if(d.tipo==='ws:walkthrough-modelo'){
+    const alvo=WALKTHROUGH_POR_IMOVEL[d.imovelId];
+    if(alvo) alvo.modelo=d.modelo;
+    const np=(d.modelo&&d.modelo.passagens||[]).length;
+    const nm=(d.modelo&&d.modelo.pinos||[]).length;
+    console.info('[portal] ws:walkthrough-modelo —',np,'passagens,',nm,'pinos.',
+      alvo?'guardado em memória.':'sem imóvel ativo: numa aplicação real isto seria um INSERT.');
   }
 });
 

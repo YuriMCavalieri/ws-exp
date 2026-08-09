@@ -2,11 +2,24 @@
    publicar.mjs — monta a pasta `publicar/` pronta para subir na internet.
    Funciona igual em Netlify, Cloudflare Pages e Vercel.
 
-   uso:  node pipeline/publicar.mjs
+   uso:  npm run publicar          (ou: node 07-referencia/publicar.mjs)
    saída: publicar/  → arraste esta pasta no Netlify Drop, ou aponte o build para ela
 
    Regra inegociável: este script NUNCA copia ws-config.json.
    A chave entra depois, direto no painel do provedor ou por upload manual.
+
+   ── SOBRE OS DOIS NOMES DO PORTAL ────────────────────────────────────────
+   A árvore-fonte é organizada por pasta (01-portal/, 02-camadas/…), mas o
+   pacote publicado é PLANO: o portal referencia as camadas por nome, lado a
+   lado (`src='WS_MINT.html'`). Por isso este script achata a árvore na saída.
+
+   O portal se chama `index.html` na fonte e `WS_PLATAFORMA.html` no pacote —
+   e vai nos dois nomes, com o mesmo conteúdo, porque:
+     · `index.html`           é o que a raiz do domínio abre;
+     · `WS_PLATAFORMA.html`   é o nome estável para link direto e é o que o
+                              ws_deploy_test compara contra o index.
+   Essa divergência de nome já existia e quebrava o build. Está resolvida aqui,
+   num lugar só: o mapa FONTE abaixo é a única fonte de verdade.
 --------------------------------------------------------------------------- */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,9 +29,18 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.resolve(AQUI, '..');
 const SAIDA = path.join(RAIZ, 'publicar');
 
-const PAGINAS = ['WS_PLATAFORMA.html', 'WS_MUNDO.html', 'WS_STUDIO.html',
-  'WS_ATELIER.html', 'WS_REAL.html', 'WS_MINT.html'];
-const PASTAS = ['assets'];
+/* nome no pacote  →  caminho na árvore-fonte */
+const FONTE = {
+  'WS_PLATAFORMA.html': '01-portal/index.html',
+  'WS_MUNDO.html':      '02-camadas/mundo-3d/WS_MUNDO.html',
+  'WS_STUDIO.html':     '02-camadas/studio-3d/WS_STUDIO.html',
+  'WS_ATELIER.html':    '02-camadas/atelier/WS_ATELIER.html',
+  'WS_REAL.html':       '02-camadas/tour-360/WS_REAL.html',
+  'WS_MINT.html':       '02-camadas/walkthrough/WS_MINT.html',
+};
+const PAGINAS = Object.keys(FONTE);
+/* os GLB de mobília viram publicar/assets/ — os mundos em splat vêm do CDN */
+const ASSETS = '06-assets';
 const PROIBIDOS = [/ws-config\.json$/i, /\.env/i, /node_modules/];
 
 const log = (s) => console.log('  ' + s);
@@ -33,30 +55,32 @@ console.log('\nWS PLATAFORMA — montando o pacote de publicação\n');
 
 /* ------------------------------------------------------------------ páginas */
 let bytes = 0;
-for (const p of PAGINAS) {
-  const orig = path.join(RAIZ, p);
-  if (!fs.existsSync(orig)) throw new Error('faltando: ' + p);
+for (const [nome, rel] of Object.entries(FONTE)) {
+  const orig = path.join(RAIZ, rel);
+  if (!fs.existsSync(orig)) throw new Error('faltando na árvore-fonte: ' + rel);
   const conteudo = fs.readFileSync(orig);
-  fs.writeFileSync(path.join(SAIDA, p), conteudo);
+  fs.writeFileSync(path.join(SAIDA, nome), conteudo);
   bytes += conteudo.length;
-  log('✔ ' + p + '  ' + (conteudo.length / 1024).toFixed(0) + ' KB');
+  log('✔ ' + nome + '  ' + (conteudo.length / 1024).toFixed(0) + ' KB   ← ' + rel);
 }
-/* o portal também responde na raiz do domínio */
-fs.copyFileSync(path.join(RAIZ, 'WS_PLATAFORMA.html'), path.join(SAIDA, 'index.html'));
+/* o portal também responde na raiz do domínio, com o mesmo conteúdo */
+fs.copyFileSync(path.join(SAIDA, 'WS_PLATAFORMA.html'), path.join(SAIDA, 'index.html'));
 log('✔ index.html  (cópia do portal — a raiz do domínio abre nele)');
 
-/* ------------------------------------------------------------------- pastas */
-for (const d of PASTAS) {
-  const orig = path.join(RAIZ, d);
-  if (!fs.existsSync(orig)) continue;
-  /* os mundos em splat vão junto: sem eles o link publicado não abre sozinho.
-     São grandes, mas ficam com cache imutável no CDN. */
-  /* os mundos agora vêm do CDN por HTTPS: os .splat locais viraram sobra */
-  try{ fs.cpSync(orig, path.join(SAIDA, d), { recursive: true, force: true,
-    filter: (src) => !src.includes(`${path.sep}mundos`) });
-  }catch(e){ console.log('  ▲ ' + d + '/ parcialmente em uso (' + e.code + ') — mantido o que já estava'); }
-  const n = fs.readdirSync(orig).length;
-  log('✔ ' + d + '/  (' + n + ' arquivo' + (n > 1 ? 's' : '') + ')');
+/* ------------------------------------------------------------------- assets */
+/* Só os GLB de mobília. Os mundos em Gaussian splat vêm do CDN por HTTPS —
+   ver 06-assets/MANIFESTO-MUNDOS.md. Nada de .splat/.rad/.ply no pacote. */
+{
+  const orig = path.join(RAIZ, ASSETS);
+  const dest = path.join(SAIDA, 'assets');
+  fs.mkdirSync(dest, { recursive: true });
+  let n = 0;
+  for (const f of fs.readdirSync(orig)) {
+    if (!/\.(glb|gltf|ktx2|bin)$/i.test(f)) continue;
+    fs.copyFileSync(path.join(orig, f), path.join(dest, f));
+    n++;
+  }
+  log('✔ assets/  (' + n + ' modelo' + (n > 1 ? 's' : '') + ' 3D)');
 }
 
 /* ------------------------------------------------- cabeçalhos de segurança */
@@ -97,7 +121,7 @@ log('✔ _redirects  (/mundo, /studio, /atelier, /real)');
 /* ---------------------------------------------------------------- netlify -- */
 fs.writeFileSync(path.join(RAIZ, 'netlify.toml'), `# Netlify: aponte o repositório para esta pasta e publique.
 [build]
-  command = "node pipeline/publicar.mjs"
+  command = "npm run publicar"
   publish = "publicar"
 
 [[headers]]
@@ -111,7 +135,7 @@ log('✔ netlify.toml  (na raiz do projeto)');
 
 /* ----------------------------------------------------------------- vercel -- */
 fs.writeFileSync(path.join(RAIZ, 'vercel.json'), JSON.stringify({
-  buildCommand: 'node pipeline/publicar.mjs',
+  buildCommand: 'npm run publicar',
   outputDirectory: 'publicar',
   cleanUrls: true,
   rewrites: [
@@ -158,21 +182,24 @@ a:hover{background:rgba(201,169,97,.1)}
 log('✔ 404.html');
 
 /* -------------------------------------------------- exemplo de configuração */
-fs.copyFileSync(path.join(RAIZ, 'ws-config.exemplo.json'),
+fs.copyFileSync(path.join(RAIZ, '04-servidor', 'ws-config.exemplo.json'),
   path.join(SAIDA, 'ws-config.exemplo.json'));
 log('✔ ws-config.exemplo.json  (modelo, sem chave)');
 
 /* ------------------------------------------------------------- .gitignore -- */
-fs.writeFileSync(path.join(RAIZ, '.gitignore'), `# nunca versionar
-ws-config.json
-.env
-.env.*
-node_modules/
-publicar/
-*.log
-.DS_Store
-`);
-log('✔ .gitignore  (protege a chave)');
+/* O .gitignore é versionado e mantido à mão — este script apenas confere que
+   ele cobre o essencial. Sobrescrevê-lo aqui já apagou regras uma vez (os
+   padrões de asset pesado: *.splat, *.rad, *.ply). */
+{
+  const alvo = path.join(RAIZ, '.gitignore');
+  const atual = fs.existsSync(alvo) ? fs.readFileSync(alvo, 'utf8') : '';
+  const exigido = ['ws-config.json', '.env', 'node_modules/', 'publicar/'];
+  const faltando = exigido.filter(k => !atual.includes(k));
+  if (faltando.length) {
+    console.log('  ✘ .gitignore NÃO cobre: ' + faltando.join(', ') + ' — corrija antes de publicar');
+    process.exitCode = 1;
+  } else log('✔ .gitignore  (protege a chave — conferido, não sobrescrito)');
+}
 
 /* ---------------------------------------------------- verificação de saída */
 /* sobra de versões anteriores: os mundos migraram para o CDN */

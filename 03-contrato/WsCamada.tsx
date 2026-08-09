@@ -22,15 +22,33 @@ import { WsBridge } from './ws-bridge';
 export type Camada =
   | 'mundo' | 'studio' | 'atelier' | 'tour' | 'walkthrough';
 
-/** Onde cada camada está publicada. Em produção, um subdomínio próprio —
- *  ver o documento de auditoria, seção "isolamento de origem". */
-const CAMINHO: Record<Camada, string> = {
-  mundo:       '/camadas/mundo-3d/WS_MUNDO.html',
-  studio:      '/camadas/studio-3d/WS_STUDIO.html',
-  atelier:     '/camadas/atelier/WS_ATELIER.html',
-  tour:        '/camadas/tour-360/WS_REAL.html',
-  walkthrough: '/camadas/walkthrough/WS_MINT.html',
+/** Nome do arquivo publicado de cada camada. O pacote gerado por
+ *  `npm run publicar` é plano — as camadas ficam lado a lado na raiz. */
+const ARQUIVO: Record<Camada, string> = {
+  mundo:       'WS_MUNDO.html',
+  studio:      'WS_STUDIO.html',
+  atelier:     'WS_ATELIER.html',
+  tour:        'WS_REAL.html',
+  walkthrough: 'WS_MINT.html',
 };
+
+/**
+ * Origem onde as camadas estão publicadas. Em produção, um subdomínio próprio —
+ * ver o documento de auditoria, seção "isolamento de origem".
+ *
+ * Isto é uma constante, e não uma prop com valor padrão, de propósito: `origem`
+ * e o `src` do iframe PRECISAM apontar para o mesmo lugar. Quando eram duas
+ * coisas independentes — `src` relativo e `origem` = window.location.origin —
+ * mudar as camadas de subdomínio quebrava a validação de origem em silêncio:
+ * o iframe carregava, as mensagens iam para a origem errada, e a camada ficava
+ * eternamente "carregando" sem nenhum erro no console.
+ */
+export const ORIGEM_CAMADAS: string =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_ORIGEM_CAMADAS) ||
+  (typeof window !== 'undefined' ? window.location.origin : '');
+
+const urlDaCamada = (c: Camada, base: string) =>
+  `${base.replace(/\/$/, '')}/${ARQUIVO[c]}`;
 
 export interface Imovel {
   id: string; nome: string; endereco?: string;
@@ -39,9 +57,33 @@ export interface Imovel {
   preco?: number; wsi?: number; status?: string;
 }
 
+export interface AmbienteMidia {
+  id: string; nome?: string;
+  /** .rad paginado, .splat ou .ply */
+  splat: string;
+  /** GLB invisível. Sem ele a camada desliga a medição — não a estima. */
+  colisor?: string;
+  capa?: string; bytes?: number;
+  /** true = ambiente gerado por IA. Nunca para representar imóvel real à venda. */
+  gerado?: boolean;
+  cal?: { rotY?: number; escala?: number; y?: number };
+}
+
 export interface Midia {
+  /** atalho de ambiente único */
   splat?: string; colisor?: string;
+  /** vários cômodos ligados por passagens — tem precedência sobre splat/colisor */
+  ambientes?: AmbienteMidia[];
   panoramas?: string[]; fotos?: string[];
+}
+
+/** Autoria do tour: como os cômodos se ligam e onde estão os pinos de móvel. */
+export interface WalkthroughModelo {
+  v: number;
+  ambientes: { id: string; nome?: string; gerado?: boolean; crop?: number; cal?: unknown }[];
+  passagens: { de: string; para: string | null; x: number; y: number; z: number }[];
+  pinos: { ambiente: string; x: number; y: number; z: number;
+           movel: { sku: string; nome: string; preco: number } }[];
 }
 
 export interface Lead {
@@ -60,10 +102,14 @@ interface Props {
   imovel?: Imovel;
   space?: unknown;
   midia?: Midia;
-  /** Origem da camada. Em produção: o subdomínio onde ela vive. */
+  /** Modelo autoral do walkthrough gravado antes — restaura passagens e pinos. */
+  walkthrough?: WalkthroughModelo | null;
+  /** Origem onde a camada está publicada. O `src` do iframe sai daqui também. */
   origem?: string;
   aoReceberLead?: (lead: Lead) => void;
   aoSalvarProjeto?: (space: unknown, imovelId: string) => void;
+  /** Autoria do tour mudou: passagens, pinos ou calibração. Persistir. */
+  aoSalvarWalkthrough?: (modelo: WalkthroughModelo, imovelId: string | null) => void;
   aoMudarCarrinho?: (itens: { sku: string; nome: string; preco: number }[]) => void;
   aoNavegar?: (destino: string, dados?: unknown) => void;
   aoErro?: (erro: Error) => void;
@@ -71,9 +117,10 @@ interface Props {
 }
 
 export function WsCamada({
-  camada, imovel, space, midia,
-  origem = typeof window !== 'undefined' ? window.location.origin : '',
-  aoReceberLead, aoSalvarProjeto, aoMudarCarrinho, aoNavegar, aoErro,
+  camada, imovel, space, midia, walkthrough,
+  origem = ORIGEM_CAMADAS,
+  aoReceberLead, aoSalvarProjeto, aoSalvarWalkthrough, aoMudarCarrinho,
+  aoNavegar, aoErro,
   className,
 }: Props) {
   const ref = useRef<HTMLIFrameElement>(null);
@@ -100,6 +147,10 @@ export function WsCamada({
       b.em('ws:space-model', (m: any) =>
         aoSalvarProjeto?.(m.space, m.imovelId)),
 
+      /* autoria do walkthrough — chega já com debounce de 1,5 s da camada */
+      b.em('ws:walkthrough-modelo', (m: any) =>
+        aoSalvarWalkthrough?.(m.modelo, m.imovelId ?? null)),
+
       b.em('ws:carrinho', (m: any) => aoMudarCarrinho?.(m.itens)),
 
       /* navegação — a aplicação decide a rota, a camada só pede */
@@ -110,20 +161,25 @@ export function WsCamada({
     ];
 
     return () => { inscricoes.forEach(cancelar => cancelar()); b.destruir(); };
-  }, [camada, origem, tratarErro,
-      aoReceberLead, aoSalvarProjeto, aoMudarCarrinho, aoNavegar]);
+  }, [camada, origem, tratarErro, aoReceberLead, aoSalvarProjeto,
+      aoSalvarWalkthrough, aoMudarCarrinho, aoNavegar]);
 
   /* injeta o imóvel assim que houver dado — o bridge enfileira se preciso */
   useEffect(() => {
     if (!imovel) return;
-    bridgeRef.current?.enviar('ws:carregar-imovel', { imovel, space, midia });
-  }, [imovel, space, midia, pronto]);
+    bridgeRef.current?.enviar('ws:carregar-imovel', { imovel, space, midia, walkthrough });
+  }, [imovel, space, midia, walkthrough, pronto]);
 
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <iframe
         ref={ref}
-        src={CAMINHO[camada]}
+        src={urlDaCamada(camada, origem)}
+        /* A `key` força o React a destruir e recriar o iframe quando a camada
+           muda, em vez de reaproveitar o elemento trocando o src. Reaproveitar
+           mantinha o contexto WebGL anterior vivo — e o navegador descarta o
+           contexto mais antigo sem avisar, o que devolve a camada em tela preta. */
+        key={`${camada}@${origem}`}
         title={`White Stone — camada ${camada}`}
         /* WebGL, ponteiro travado e tela cheia. Sem isso o 3D não funciona. */
         allow="fullscreen; xr-spatial-tracking; accelerometer; gyroscope"

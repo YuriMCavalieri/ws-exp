@@ -31,15 +31,20 @@ As camadas usam `fetch` para carregar configuração e assets. Navegador nenhum
 faz `fetch` de arquivo local — é regra de segurança. Então:
 
 ```bash
-cd 01-portal
-python3 -m http.server 8080
+npm install      # só na primeira vez (jsdom, para a suíte do Studio)
+npm run servir   # http://localhost:8080
+npm test         # as seis suítes
 ```
 
-Abra `http://localhost:8080/index.html`.
+O portal carrega as jornadas por iframe. Se alguma tela ficar preta, **não é
+bug silencioso**: as camadas têm vigia próprio e explicam o que aconteceu na
+tela.
 
-O portal carrega as cinco jornadas por iframe. Se alguma tela ficar preta,
-**não é bug silencioso**: as camadas têm vigia próprio e explicam o que
-aconteceu na tela.
+> **Não use `python3 -m http.server` a partir de `01-portal/`.** O portal
+> referencia as camadas por nome ao lado dele (`WS_MINT.html`), e na
+> árvore-fonte elas moram em `02-camadas/<camada>/`. Servir a pasta do portal
+> dá 404 em todas as jornadas. O `npm run servir` faz a mesma tradução de
+> caminhos que o `npm run publicar` — o que você vê em dev é o que vai ao ar.
 
 ---
 
@@ -73,25 +78,58 @@ partir de vídeo. É a rota de contingência quando a captura fotográfica repro
 
 ---
 
-## As três coisas que precisam ser resolvidas antes de ir ao ar
+## Estado das pendências bloqueantes
 
-Estão detalhadas no PDF, mas resumidas aqui porque são bloqueantes:
+O PDF de auditoria lista doze achados. O que mudou desde ele:
 
-**1 · Nenhuma camada valida a origem das mensagens.** Todas fazem
-`postMessage(carga, '*')` e nenhuma verifica `event.origin`. Hoje isso é
-inofensivo porque tudo roda na mesma origem. No momento em que a plataforma
-embutir a camada, vira uma porta aberta. **O `03-contrato/ws-bridge.js` já
-resolve o lado da aplicação;** falta o lado das camadas.
+### Resolvido nesta revisão
 
-**2 · A chave do Google Maps vive no navegador.** Ela é lida de
-`ws-config.json` com fallback para `localStorage`. Chave em navegador é chave
-pública. Precisa ser restrita por referenciador HTTP e com teto de cota diária
-antes de qualquer publicação — ou movida para um proxy.
+**Origem das mensagens — no Walkthrough.** `WS_MINT.html` agora valida
+`event.origin` contra uma lista constante no código, confere `event.source`, e
+emite sempre para origem exata. **As demais camadas continuam pendentes** — ver
+abaixo.
 
-**3 · Duas versões de Three.js convivem.** As camadas Mundo, Studio, Tour e
-Atelier usam `three@0.170.0`; o Walkthrough usa `three@0.184.0` porque o Spark
-exige. Funciona porque cada iframe tem seu próprio contexto — mas é uma
-armadilha para quem for consolidar.
+**O Walkthrough não falava o contrato.** Era a única camada sem
+`addEventListener('message')` e sem `ws:pronto`: o `ws-bridge` esperava o
+handshake para sempre e `ws:carregar-imovel` nunca era entregue. Implementado.
+
+**A autoria do tour se perdia no F5.** Passagens entre cômodos e pinos de móvel
+só existiam na memória do iframe. Agora saem em `ws:walkthrough-modelo` e há
+tabela para recebê-los (`04-servidor/SCHEMA-COBRANCA.sql`).
+
+**As fotos do imóvel vazavam.** O pedido de geração ia para o `parent` com
+destino `'*'` carregando as imagens inteiras em base64. Agora só o metadado
+sai; as fotos ficam no navegador.
+
+**Edge Functions sem autenticação.** As duas tinham a chave no servidor — e
+nada mais: sem identidade, sem limite, sem cobrança. Qualquer um que
+descobrisse a URL gerava mundos na conta White Stone a US$ 1,20 cada. Agora
+exigem JWT, debitam antes de chamar o fornecedor e estornam se ele falhar.
+
+**Integridade dos scripts de CDN — no Walkthrough.** Import map com `integrity`
+por módulo e versões exatas. Módulo ES não aceita o atributo `integrity=`; o
+hash vai no mapa. Para auto-hospedar: `node 07-referencia/vendorizar.mjs`.
+
+**Cinco contextos WebGL vivos ao mesmo tempo.** O portal trocava de jornada por
+visibilidade CSS e nunca desmontava nada. Agora só uma camada fica montada.
+
+### Ainda em aberto
+
+**1 · Origem das mensagens nas outras quatro camadas.** Mundo, Studio, Tour e
+Atelier ainda fazem `postMessage(carga, '*')` e não verificam `event.origin`.
+O padrão a seguir está em `WS_MINT.html`, seção "CONTRATO DE MENSAGENS".
+
+**2 · A chave do Google Maps vive no navegador.** Lida de `ws-config.json` com
+fallback para `localStorage` e prompt. Precisa de restrição por referenciador
+HTTP, restrição por API e teto de cota **antes** de publicar, e os dois
+fallbacks de desenvolvimento precisam sair.
+
+**3 · SRI nas outras camadas.** Só o Walkthrough tem hashes hoje.
+
+**4 · Duas versões de Three.js convivem.** Mundo, Studio, Tour e Atelier usam
+`three@0.170.0`; o Walkthrough usa `three@0.184.0` porque o Spark exige.
+Funciona porque cada iframe tem seu próprio contexto — mas é uma armadilha para
+quem for consolidar num bundle só.
 
 ---
 

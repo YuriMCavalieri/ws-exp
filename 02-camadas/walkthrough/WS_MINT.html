@@ -218,12 +218,51 @@ setTimeout(function(){
 },25000);
 </script>
 
+<!-- ───────────────────────────────────────────────────────────────────────────
+  INTEGRIDADE DOS SCRIPTS DE CDN
+
+  Módulos ES não aceitam o atributo `integrity=` — o especificador é resolvido
+  pelo mapa, não por uma tag <script>. O mecanismo correto é o campo
+  `integrity` do próprio import map, e é o que está abaixo.
+
+  Os hashes cobrem o fecho completo do que esta página importa: three, os dois
+  loaders e os dois utilitários que o GLTFLoader puxa por dentro. Navegador que
+  ainda não entende `integrity` no import map simplesmente ignora o campo e
+  carrega como antes — é melhoria progressiva, não quebra nada.
+
+  DUAS RESSALVAS HONESTAS:
+
+  1. `@sparkjsdev/spark@2` virou `@2.1.0`. A faixa `@2` resolvia para a última
+     2.x, e travar hash de faixa móvel é contradição: o hash quebra no dia em
+     que o esm.sh publicar a 2.2. Versão exata é o que torna o hash verdadeiro.
+
+  2. O hash do Spark cobre o SHIM do esm.sh (109 bytes), que reexporta do
+     módulo real em `/@sparkjsdev/spark@2.1.0/…/spark.mjs`. Esse segundo salto
+     NÃO está coberto. Proteção parcial — e a razão pela qual auto-hospedar as
+     bibliotecas continua sendo a recomendação da auditoria, não uma
+     alternativa equivalente. Rode `node 07-referencia/vendorizar.mjs` para
+     baixar tudo para 02-camadas/vendor/ e trocar o mapa.
+
+  Fora do alcance do import map: o decodificador Draco (WASM, buscado em
+  runtime pelo DRACOLoader) e os mundos .rad do CDN. Os dois precisam de
+  Content-Type e CORS corretos na origem, não de SRI.
+──────────────────────────────────────────────────────────────────────────── -->
 <script type="importmap">
-{"imports":{
-  "three":"https://unpkg.com/three@0.184.0/build/three.module.js",
-  "three/addons/":"https://unpkg.com/three@0.184.0/examples/jsm/",
-  "@sparkjsdev/spark":"https://esm.sh/@sparkjsdev/spark@2?external=three"
-}}
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.184.0/examples/jsm/",
+    "@sparkjsdev/spark": "https://esm.sh/@sparkjsdev/spark@2.1.0?external=three"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/examples/jsm/loaders/GLTFLoader.js": "sha384-3CnKaFWE2emo2DOUQi/yFm4SMemUgSZ9IAJe/V2pyJTw9KXWYSmR0MiX/7RoPyiJ",
+    "https://unpkg.com/three@0.184.0/examples/jsm/loaders/DRACOLoader.js": "sha384-GZ9vmV3mUXifzUUVPK8co9i6KmQWrcQCv1hcKp+EXQ+TxZ6tGGQjTEcP9PRWRu5C",
+    "https://unpkg.com/three@0.184.0/examples/jsm/utils/BufferGeometryUtils.js": "sha384-7hDmXj1Pzh+247/oGQWqojXH2XGbc0fOGrcNmbi5ly2QK0IC1ouPa/niSKBka6nl",
+    "https://unpkg.com/three@0.184.0/examples/jsm/utils/SkeletonUtils.js": "sha384-Pozn8j5+YFr3ak8Pm90ayqDrGYn/DV7vVs/YIIqzJhzeJT0LQksoS1fZQ5lfsYlw",
+    "https://esm.sh/@sparkjsdev/spark@2.1.0?external=three": "sha384-R+KoLhSPa/seo7t5DcIUnkbe4r90hnHznkZkZbk07QXX1EGv+XftKGhJcGQDtZGH"
+  }
+}
 </script>
 
 <script type="module">
@@ -624,7 +663,7 @@ function abrirCard(i){
   $('#cardX').onclick=fecharCard;
   $('#cardAdd').onclick=()=>{ if(!CART.find(x=>x.sku===m.sku)) CART.push({...m});
     $('#cardAdd').textContent='no carrinho ✓';
-    try{ parent.postMessage({tipo:'ws:carrinho',itens:CART},'*'); }catch(e){} };
+    enviarAoApp({tipo:'ws:carrinho', itens:CART}); };
 }
 function fecharCard(){ cardAberto=null; const c=$('#mcard'); if(c) c.style.display='none'; }
 
@@ -676,6 +715,7 @@ cv.addEventListener('click',ev=>{
       movel:{nome:'Móvel sem nome',preco:0,sku:'p'+Date.now().toString(36)}});
     aviso('Pino de móvel criado. Dê nome e preço na lista ao lado.','ok');
   }
+  modeloMudou();
   pinosRender(); modo(null);
 });
 
@@ -766,15 +806,16 @@ function painelAmbientes(){
   const b=$('#btNovaPassagem'); if(b) b.onclick=()=>modo(EST.modo==='passagem'?null:'passagem');
   const bm=$('#btNovoMovel'); if(bm) bm.onclick=()=>modo(EST.modo==='movel'?null:'movel');
   $$('[data-mn]').forEach(i=>i.oninput=()=>{
-    AMBIENTES[EST.atual].pinos[+i.dataset.mn].movel.nome=i.value; });
+    AMBIENTES[EST.atual].pinos[+i.dataset.mn].movel.nome=i.value; modeloMudou(); });
   $$('[data-mp]').forEach(i=>i.oninput=()=>{
-    AMBIENTES[EST.atual].pinos[+i.dataset.mp].movel.preco=+String(i.value).replace(/\D/g,'')||0; });
+    AMBIENTES[EST.atual].pinos[+i.dataset.mp].movel.preco=+String(i.value).replace(/\D/g,'')||0;
+    modeloMudou(); });
   $$('[data-mx]').forEach(b2=>b2.onclick=()=>{
-    AMBIENTES[EST.atual].pinos.splice(+b2.dataset.mx,1); pinosRender(); painel(); });
+    AMBIENTES[EST.atual].pinos.splice(+b2.dataset.mx,1); modeloMudou(); pinosRender(); painel(); });
   $$('[data-pd]').forEach(s=>s.onchange=()=>{
-    AMBIENTES[EST.atual].passagens[+s.dataset.pd].destino=s.value; pinosRender(); });
+    AMBIENTES[EST.atual].passagens[+s.dataset.pd].destino=s.value; modeloMudou(); pinosRender(); });
   $$('[data-px]').forEach(b2=>b2.onclick=()=>{
-    AMBIENTES[EST.atual].passagens.splice(+b2.dataset.px,1); pinosRender(); painel(); });
+    AMBIENTES[EST.atual].passagens.splice(+b2.dataset.px,1); modeloMudou(); pinosRender(); painel(); });
 }
 
 const ANGULOS=['sala vista da entrada','sala vista oposta','janela e vista',
@@ -856,13 +897,18 @@ async function gerarMundo(){
 
   if(!ep){
     /* Sem função de servidor não existe geração — e fingir que existe é o pior
-       dos mundos: o usuário fica esperando para sempre. Diz na hora. */
-    try{ parent.postMessage(carga,'*'); }catch(e){}
+       dos mundos: o usuário fica esperando para sempre. Diz na hora.
+
+       O que segue para a aplicação é o PEDIDO, nunca as fotos. `carga` carrega
+       imagensDados: as fotos do imóvel inteiras, em base64. Isso saía daqui com
+       destino '*' — qualquer página que embutisse a camada recebia as fotos do
+       cliente. pedido() traz só nome, prompt, nomes de arquivo e tamanhos. */
+    enviarAoApp({tipo:'ws:pedido-mundo', pedido:pedido()});
     CRIAR.estado='ocioso'; CRIAR.erro=true;
     CRIAR.msg='<b>Não há gerador ligado neste navegador.</b> A geração roda em '+
-      'servidor, porque a chave não pode viver aqui. O pedido foi montado e enviado '+
-      'para execução do lado seguro — use <b>Exportar pedido</b> para levar o arquivo. '+
-      'Nada foi gerado nem cobrado.';
+      'servidor, porque a chave não pode viver aqui. O pedido — sem as fotos — foi '+
+      'avisado à plataforma; use <b>Exportar pedido</b> para levar o arquivo. '+
+      'As fotos ficam neste navegador. Nada foi gerado nem cobrado.';
     painel(); return;
   }
 
@@ -987,14 +1033,16 @@ function painelAjustes(){
   </div>`;
   const lig=(id,fn,fmt)=>{ const n=$('#'+id); if(!n)return;
     n.oninput=()=>{ fn(+n.value); n.nextElementSibling.textContent=fmt(+n.value); }; };
-  lig('cEsc',v=>{a.cal.escala=v;aplicarCalibracao()},v=>v.toFixed(2)+'×');
-  lig('cY',  v=>{a.cal.y=v;aplicarCalibracao()},     v=>v.toFixed(2)+' m');
-  lig('cRot',v=>{a.cal.rotY=v*Math.PI/180;aplicarCalibracao()},v=>Math.round(v)+'°');
-  lig('cCrop',v=>{ a.crop=v/100; aplicarRecorte(); },v=>Math.round(v)+'%');
+  /* calibração e recorte fazem parte do modelo autoral: quem acertou a escala
+     de um ambiente não deveria refazer isso no próximo acesso */
+  lig('cEsc',v=>{a.cal.escala=v;aplicarCalibracao();modeloMudou()},v=>v.toFixed(2)+'×');
+  lig('cY',  v=>{a.cal.y=v;aplicarCalibracao();modeloMudou()},     v=>v.toFixed(2)+' m');
+  lig('cRot',v=>{a.cal.rotY=v*Math.PI/180;aplicarCalibracao();modeloMudou()},v=>Math.round(v)+'°');
+  lig('cCrop',v=>{ a.crop=v/100; aplicarRecorte(); modeloMudou(); },v=>Math.round(v)+'%');
   lig('cPr', v=>{renderer.setPixelRatio(clamp(v/100,0.75,3));redim()},v=>(v/100).toFixed(2)+'×');
   lig('cFov',v=>{cam.fov=v;cam.updateProjectionMatrix()},v=>Math.round(v)+'°');
   const bp=$('#btCalPad'); if(bp) bp.onclick=()=>{
-    a.cal={rotY:Math.PI,escala:2.5,y:1.5}; aplicarCalibracao(); painel(); };
+    a.cal={rotY:Math.PI,escala:2.5,y:1.5}; aplicarCalibracao(); modeloMudou(); painel(); };
   $$('[data-q]').forEach(b=>b.onclick=()=>{
     const q=b.dataset.q; if(q===EST.qualidade||!QUALIDADE[q]) return;
     EST.qualidade=q;
@@ -1117,7 +1165,7 @@ $('#btFoto').onclick=()=>{
     a.download='ws-walkthrough.png';a.click(); renderer.setPixelRatio(pr); redim();});
 };
 $('#faixaX').onclick=()=>modo(null);
-$('#btVoltar').onclick=()=>parent.postMessage({tipo:'ws:voltar-mundo'},'*');
+$('#btVoltar').onclick=()=>enviarAoApp({tipo:'ws:voltar-mundo'});
 if(parent!==window) $('#btVoltar').style.display='block';
 addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea,select')) return;
@@ -1127,6 +1175,206 @@ addEventListener('keydown',e=>{
   if(e.key==='?') $('#btAjuda').click();
   if(e.key==='b'||e.key==='B'){ ANDAR.conforto=!ANDAR.conforto;
     hud(ANDAR.conforto?'balanço de passo desligado':'balanço de passo ligado'); painel(); }
+});
+
+/* ==========================================================================
+   CONTRATO DE MENSAGENS — o lado da camada
+   ==========================================================================
+   Antes desta seção o Walkthrough era a única camada surda do sistema: emitia
+   três mensagens com destino '*' e não escutava nenhuma. Consequências reais,
+   todas observadas:
+
+     · o WsBridge esperava ws:pronto para sempre e a aplicação mostrava painel
+       de erro por cima de um walkthrough que estava funcionando atrás;
+     · ws:carregar-imovel ficava preso na fila do bridge e nunca chegava;
+     · o portal mandava ws:entrar-walkthrough três vezes, ninguém escutava, e
+       o visitante via a sala de demonstração de São Paulo enquanto o aviso na
+       tela afirmava ser o imóvel que ele havia clicado — que é exatamente o
+       mal-entendido que o selo de "representação ilustrativa" existe para
+       impedir, não para legitimar.
+
+   Regras aplicadas aqui:
+     1. origem de saída sempre exata, nunca '*';
+     2. origem de entrada conferida contra a lista, e e.source === parent;
+     3. a lista é constante no código — nunca vem da URL. Origem lida de query
+        seria escolhida pelo atacante que embutisse a camada, o que anularia a
+        checagem inteira;
+     4. embutido, o walkthrough NÃO abre mundo nenhum por conta própria: ele
+        se anuncia e espera o imóvel. Abrir a demonstração enquanto o imóvel
+        real não chega é o defeito descrito acima.
+   ------------------------------------------------------------------------ */
+
+const VERSAO_CONTRATO=1;
+const CAMADA='walkthrough';
+
+const ORIGENS_APP=[
+  'https://app.whitestone.living',
+  'https://staging.whitestone.living',
+];
+/* Em desenvolvimento a camada e a aplicação compartilham a origem. Só vale
+   quando a própria camada está em localhost — nunca em produção. */
+const EM_DEV=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const ORIGENS=EM_DEV ? ORIGENS_APP.concat(location.origin) : ORIGENS_APP;
+
+const EMBUTIDO = parent!==window;
+
+/* Para qual origem responder. O referrer dá o pai; só é aceito se estiver na
+   lista. Sem referrer (alguns Referrer-Policy), emitimos para cada origem
+   permitida: o navegador só entrega àquela que de fato for o pai. */
+function origensDeSaida(){
+  try{
+    if(document.referrer){
+      const o=new URL(document.referrer).origin;
+      if(ORIGENS.includes(o)) return [o];
+    }
+  }catch(e){}
+  return ORIGENS;
+}
+const SAIDA=origensDeSaida();
+
+function enviarAoApp(msg){
+  if(!EMBUTIDO) return;
+  const carga={...msg, v:VERSAO_CONTRATO, camada:CAMADA};
+  for(const o of SAIDA){
+    try{ parent.postMessage(carga,o); }catch(e){}
+  }
+}
+
+/* ----------------------------------------------- o modelo autoral do tour --
+   Passagens e pinos eram criados só na memória do objeto AMBIENTES: o corretor
+   ligava sala → cozinha → suíte, nomeava e precificava os móveis, e perdia
+   tudo no F5. Não havia caminho nenhum até o banco.
+
+   O formato de fio achata o grafo — cada passagem carrega o ambiente de origem
+   — porque é assim que ele vira linha de tabela sem precisar de aninhamento. */
+function modeloDoWalkthrough(){
+  const passagens=[], pinos=[];
+  AMBIENTES.forEach(a=>{
+    (a.passagens||[]).forEach(p=>passagens.push({
+      de:a.id, para:p.destino||null, x:p.x, y:p.y, z:p.z }));
+    (a.pinos||[]).forEach(p=>pinos.push({
+      ambiente:a.id, x:p.x, y:p.y, z:p.z, movel:{...p.movel} }));
+  });
+  return {
+    v:VERSAO_CONTRATO,
+    ambientes:AMBIENTES.map(a=>({id:a.id, nome:a.nome, gerado:!!a.gerado,
+      cal:{...a.cal}, crop:a.crop||0})),
+    passagens, pinos,
+  };
+}
+function aplicarModelo(m){
+  if(!m || typeof m!=='object') return;
+  /* calibração e recorte por ambiente */
+  (m.ambientes||[]).forEach(x=>{
+    const a=AMBIENTES.find(y=>y.id===x.id); if(!a) return;
+    if(x.cal) a.cal={...a.cal,...x.cal};
+    if(typeof x.crop==='number') a.crop=x.crop;
+  });
+  AMBIENTES.forEach(a=>{ a.passagens=[]; a.pinos=[]; });
+  (m.passagens||[]).forEach(p=>{
+    const a=AMBIENTES.find(y=>y.id===p.de); if(!a) return;
+    a.passagens.push({x:p.x, y:p.y, z:p.z, destino:p.para||null});
+  });
+  (m.pinos||[]).forEach(p=>{
+    const a=AMBIENTES.find(y=>y.id===p.ambiente); if(!a) return;
+    a.pinos.push({x:p.x, y:p.y, z:p.z, movel:{...p.movel}});
+  });
+}
+
+/* A autoria é episódica (clique, nomear, precificar). 1,5 s agrupa a rajada de
+   digitação sem fazer o usuário esperar por um salvamento que ele não pediu. */
+let tModelo=null;
+function modeloMudou(){
+  if(!EMBUTIDO) return;
+  clearTimeout(tModelo);
+  tModelo=setTimeout(()=>{
+    enviarAoApp({tipo:'ws:walkthrough-modelo',
+      imovelId:(IMOVEL&&IMOVEL.id)||null, modelo:modeloDoWalkthrough()});
+  },1500);
+}
+
+/* --------------------------------------------------- entrada de comandos -- */
+let IMOVEL=null;
+
+function formatoDaUrl(u){
+  if(/\.rad(\?|$)/i.test(u)) return 'rad';
+  if(/\.ply(\?|$)/i.test(u)) return 'ply';
+  return 'splat';
+}
+
+/* Monta os ambientes de um imóvel vindo do banco e substitui o acervo de
+   demonstração. `midia.ambientes` é o caso de vários cômodos ligados por
+   passagens; `midia.splat` é o atalho de um cômodo só. */
+function carregarImovel(msg){
+  const im=msg.imovel||{}, md=msg.midia||{};
+  const lista=Array.isArray(md.ambientes)&&md.ambientes.length
+    ? md.ambientes
+    : (md.splat ? [{id:'principal', nome:im.nome||'Ambiente',
+        splat:md.splat, colisor:md.colisor, capa:md.capa,
+        bytes:md.bytes, cal:md.cal, gerado:md.gerado}] : []);
+
+  if(!lista.length){
+    $('#carga').style.display='flex';
+    falhou('O imóvel "'+(im.nome||im.id||'sem nome')+'" chegou sem mídia de walkthrough.\n\n'+
+      'A aplicação enviou ws:carregar-imovel, mas sem midia.splat nem midia.ambientes.\n'+
+      'Sem o arquivo do ambiente não há o que caminhar.\n\n'+
+      'O sistema prefere dizer isso a abrir um ambiente de demonstração no lugar '+
+      'do imóvel — mostrar outro espaço sob o nome deste seria pior que não mostrar nada.');
+    return;
+  }
+
+  IMOVEL=im;
+  AMBIENTES.length=0;
+  lista.forEach((x,i)=>AMBIENTES.push({
+    id:x.id||('amb-'+i), nome:x.nome||('Ambiente '+(i+1)),
+    formato:formatoDaUrl(x.splat||''),
+    rad:x.splat, colisor:x.colisor||'', capa:x.capa||'',
+    bytes:x.bytes||0,
+    /* sem declaração explícita, mídia vinda do banco é captura do imóvel real:
+       é o padrão seguro — rotular captura como "gerado" só confunde, e rotular
+       gerado como captura é o erro que o selo existe para evitar */
+    gerado:x.gerado===true,
+    cal:{rotY:Math.PI, escala:2.5, y:1.5, ...(x.cal||{})},
+    passagens:[], pinos:[],
+  }));
+
+  if(msg.walkthrough) aplicarModelo(msg.walkthrough);
+
+  EST.atual=0; EST.aba='ambientes'; sincronizarAbas();
+  abrirAmbiente(0).catch(e=>falhou('Falha ao abrir o imóvel: '+(e.message||e)));
+}
+
+function tratarComando(msg){
+  switch(msg.tipo){
+    case 'ws:carregar-imovel':
+    case 'ws:entrar-walkthrough':       /* o que o portal já emitia hoje */
+      carregarImovel(msg); break;
+
+    case 'ws:pedir-walkthrough':
+      enviarAoApp({tipo:'ws:walkthrough-modelo',
+        imovelId:(IMOVEL&&IMOVEL.id)||null, modelo:modeloDoWalkthrough()});
+      break;
+
+    case 'ws:ir-para':{
+      const alvo=msg.alvo||{};
+      const j=AMBIENTES.findIndex(a=>a.id===alvo.ambiente);
+      if(j>=0 && j!==EST.atual) atravessar(j);
+      else if(j<0 && alvo.ambiente) hud('ambiente "'+alvo.ambiente+'" não existe neste imóvel');
+      break;
+    }
+    /* Regra 6 do contrato: comando desconhecido é ignorado em silêncio, para
+       que uma aplicação nova não quebre uma camada velha. */
+  }
+}
+
+addEventListener('message',e=>{
+  if(!ORIGENS.includes(e.origin)) return;
+  if(e.source!==parent) return;
+  const m=e.data;
+  if(!m || typeof m!=='object') return;
+  if(typeof m.tipo!=='string' || !m.tipo.startsWith('ws:')) return;
+  try{ tratarComando(m); }
+  catch(err){ console.warn('[WS] comando '+m.tipo+' falhou:',err&&err.message); }
 });
 
 /* ------------------------------------------------------------------ laço -- */
@@ -1188,10 +1436,41 @@ function laco(){
     const p=document.getElementById('pFps'); if(p) p.textContent=fps.toFixed(0)+' fps'; }
 }
 
-redim(); sincronizarAbas(); painel(); hud('carregando'); laco();
-abrirAmbiente(0).catch(e=>falhou('Falha inesperada: '+(e.message||e)));
+/* ---------------------------------------------------------------- partida --
+   Solto, a camada abre o acervo de demonstração — é como ela é apresentada.
+   Embutida, ela se anuncia e ESPERA o imóvel: baixar 42 MB de um ambiente de
+   demonstração que será descartado assim que ws:carregar-imovel chegar custa
+   dados do visitante e mostra o espaço errado no intervalo.                 */
+redim(); sincronizarAbas(); painel(); laco();
 
-window.WS_WALK={AMBIENTES,EST,CRIAR,ANDAR,ctl,pedido,alturaDoChao,bloqueado,aplicarCalibracao};
+if(!EMBUTIDO){
+  hud('carregando');
+  abrirAmbiente(0).catch(e=>falhou('Falha inesperada: '+(e.message||e)));
+}else{
+  /* o motor subiu; o que falta é dado. O vigia de 25 s não deve acusar. */
+  window.__WS_OK=true;
+  hud('aguardando o imóvel');
+  passo('aguardando o imóvel da plataforma',0.05);
+  enviarAoApp({tipo:'ws:pronto'});
+
+  /* Se nada chegar, isto é uma falha de integração e precisa ser dita — não
+     encoberta abrindo a demonstração, que foi o comportamento anterior. */
+  setTimeout(()=>{
+    if(IMOVEL) return;
+    falhou('A camada subiu e anunciou ws:pronto, mas a aplicação não enviou nenhum imóvel em 20 segundos.\n\n'+
+      'Verifique, nesta ordem:\n'+
+      '  1. a aplicação escuta ws:pronto e só então envia ws:carregar-imovel\n'+
+      '     (o ws-bridge.js já faz isso — ele enfileira até o handshake);\n'+
+      '  2. a origem configurada no WsBridge é exatamente esta camada;\n'+
+      '  3. esta camada aceita a origem da aplicação — a lista é ORIGENS_APP,\n'+
+      '     constante no código desta página.\n\n'+
+      'Origens aceitas aqui: '+ORIGENS.join(' · ')+'\n'+
+      'Origem do pai (referrer): '+(document.referrer||'não informada'));
+  },20000);
+}
+
+window.WS_WALK={AMBIENTES,EST,CRIAR,ANDAR,ctl,pedido,alturaDoChao,bloqueado,
+  aplicarCalibracao,modeloDoWalkthrough,aplicarModelo,carregarImovel,ORIGENS};
 </script>
 </body>
 </html>

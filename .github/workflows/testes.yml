@@ -1,0 +1,71 @@
+# ---------------------------------------------------------------------------
+# CI das camadas 3D da White Stone.
+#
+# A divisão em dois jobs é deliberada e vem da auditoria: as cinco suítes
+# rápidas só leem HTML e terminam em segundos — cabem em cada commit. O audit
+# do Studio monta um DOM inteiro com jsdom sobre um arquivo de 723 KB e leva
+# minutos; ele vai para job noturno, para não transformar cada push numa espera.
+# ---------------------------------------------------------------------------
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 5 * * *'      # 02h no horário de Brasília
+  workflow_dispatch:
+
+jobs:
+  rapidas:
+    name: suítes rápidas + pacote de publicação
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: suítes rápidas
+        run: npm run test:rapido
+
+      # O pacote é montado no CI e conferido, mas nunca publicado daqui.
+      # A chave entra no painel do provedor, nunca num artefato de build.
+      - name: pacote de publicação não leva segredo
+        run: |
+          test ! -f publicar/ws-config.json || (echo "ws-config.json no pacote" && exit 1)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: publicar
+          path: publicar/
+          retention-days: 7
+
+  studio:
+    name: audit do Studio (lento)
+    runs-on: ubuntu-latest
+    # só no noturno e sob demanda — ver o comentário no topo
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:studio
+
+  cdn:
+    name: os hashes de SRI ainda batem com o CDN
+    runs-on: ubuntu-latest
+    # Este job fala com a internet, então não pode bloquear PR: um unpkg fora
+    # do ar reprovaria código correto. Ele existe para AVISAR quando o CDN
+    # mudar os bytes sob um hash travado — que é exatamente o evento contra o
+    # qual o SRI protege, e que ninguém percebe até a página parar de carregar.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: conferir integrity do import map
+        run: node 05-testes/conferir-sri.mjs
