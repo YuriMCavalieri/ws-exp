@@ -172,7 +172,6 @@ body.visitante #lado,body.visitante #puxar{display:none}
     <div id="topo">
       <div class="cap" id="cap">Walkthrough</div>
       <div class="selo" id="selo" title="Este walkthrough é uma representação gráfica ilustrativa em 3D, gerada a partir de fotos do imóvel real. Busca a reprodução mais fiel possível, mas pode conter pequenos erros de forma, textura, cor e medida. Não substitui a visita ao imóvel.">representação ilustrativa 3D</div>
-      <button class="tb" id="btAndar">Caminhar</button>
       <button class="tb" id="btMedir">Medir</button>
       <button class="tb" id="btPassagem">Passagem</button>
       <button class="tb" id="btMovel">Móvel</button>
@@ -186,7 +185,7 @@ body.visitante #lado,body.visitante #puxar{display:none}
     <div id="mcard"></div>
     <div id="hud"></div>
     <div id="ajuda">
-      <b>arrastar</b> gira · <b>roda</b> aproxima<br>
+      <b>arrastar</b> olha em volta · <b>roda</b> aproxima o olhar<br>
       <b>W A S D</b> caminha · <b>Shift</b> corre · <b>C</b> agacha<br>
       <b>M</b> medir · <b>B</b> conforto · <b>V</b> visitante · <b>Esc</b> cancela
     </div>
@@ -286,16 +285,6 @@ const cv=$('#cv'), visor=$('#visor'), corpo=$('#corpo');
    (o que o sistema mede) — os dois sob o mesmo transform raiz.            */
 const AMBIENTES=[
 {
-  id:'sala-integrada',
-  nome:'Sala integrada',
-  formato:'rad',
-  rad:'https://cdn.mint.gg/rad/s-o-paulo-living-room-76448812ae8c6e84-lod.rad',
-  colisor:'https://cdn.mint.gg/worlds/sao-paulo-living-room-collider-e27d5e1f12121894.glb',
-  capa:'https://cdn.mint.gg/worlds/sao-paulo-living-room-thumbnail-e749499dd08d423f.webp',
-  bytes:42269712, gerado:true,
-  cal:{rotY:Math.PI, escala:2.5, y:1.5}, passagens:[], pinos:[]
-},
-{
   id:'penthouse-marmore',
   nome:'Penthouse mármore',
   formato:'rad',
@@ -352,8 +341,14 @@ function redim(){ const w=visor.clientWidth,h=visor.clientHeight;
   renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
 addEventListener('resize',redim);
 
-/* ---------------------------------------------------- câmera e caminhada */
-const ctl={yaw:0,pitch:0,orbita:true,alvo:new THREE.Vector3(0,1.4,0),dist:6,
+/* ---------------------------------------------------- câmera e caminhada
+   A câmera do walkthrough é SEMPRE de quem caminha: olhos a 1,60 m do chão,
+   sem órbita. Órbita mostrava o cômodo por fora — de cima, atravessando
+   parede, sem a escala de quem está lá dentro — e era o caminho mais curto
+   para o visitante achar que o ambiente estava quebrado. Quem precisa ver o
+   espaço de fora tem o Mundo 3D; aqui só se anda.
+   `alvo` deixou de ser centro de órbita e é o ponto de partida da caminhada. */
+const ctl={yaw:0,pitch:0,alvo:new THREE.Vector3(0,1.4,0),
   arrast:false,px:0,py:0,vy:0,vp:0};
 const ANDAR={vel:new THREE.Vector3(),fase:0,bob:0,lat:0,
   conforto:matchMedia('(prefers-reduced-motion: reduce)').matches};
@@ -365,21 +360,23 @@ addEventListener('blur',()=>{for(const k in tecla) tecla[k]=false;});
 cv.addEventListener('pointerdown',e=>{ctl.arrast=true;ctl.px=e.clientX;ctl.py=e.clientY;
   cv.setPointerCapture(e.pointerId)});
 cv.addEventListener('pointermove',e=>{ if(!ctl.arrast)return;
-  ctl.vy+=-(e.clientX-ctl.px)*0.0032; ctl.vp+=(ctl.orbita?1:-1)*(e.clientY-ctl.py)*0.0032;
+  ctl.vy+=-(e.clientX-ctl.px)*0.0032; ctl.vp+=-(e.clientY-ctl.py)*0.0032;
   ctl.px=e.clientX; ctl.py=e.clientY; });
 addEventListener('pointerup',()=>ctl.arrast=false);
+/* a roda aproxima o olhar (campo de visão), não afasta a câmera do corpo:
+   afastar seria órbita disfarçada */
 cv.addEventListener('wheel',e=>{e.preventDefault();
-  if(ctl.orbita) ctl.dist=clamp(ctl.dist*(1+Math.sign(e.deltaY)*0.11),0.6,120);
-  else{ cam.fov=clamp(cam.fov+Math.sign(e.deltaY)*3,30,90); cam.updateProjectionMatrix(); }
+  cam.fov=clamp(cam.fov+Math.sign(e.deltaY)*3,30,90); cam.updateProjectionMatrix();
 },{passive:false});
 function aplicarCam(){
   ctl.pitch=clamp(ctl.pitch,-1.45,1.45);
-  if(ctl.orbita){
-    const cp=Math.cos(ctl.pitch);
-    cam.position.set(ctl.alvo.x+ctl.dist*cp*Math.sin(ctl.yaw),
-      ctl.alvo.y+ctl.dist*Math.sin(ctl.pitch), ctl.alvo.z+ctl.dist*cp*Math.cos(ctl.yaw));
-    cam.lookAt(ctl.alvo);
-  } else cam.quaternion.setFromEuler(new THREE.Euler(ctl.pitch,ctl.yaw,0,'YXZ'));
+  cam.quaternion.setFromEuler(new THREE.Euler(ctl.pitch,ctl.yaw,0,'YXZ'));
+}
+/* Põe a pessoa em pé no ponto de partida do ambiente recém-aberto. */
+function plantarNoChao(){
+  cam.position.set(ctl.alvo.x,chaoY+1.6,ctl.alvo.z);
+  ctl.pitch=0; ctl.vy=0; ctl.vp=0; ANDAR.vel.set(0,0,0);
+  aplicarCam();
 }
 
 /* ------------------------------------------------------- vigia de tela preta
@@ -561,13 +558,15 @@ async function abrirAmbiente(i){
     if(isFinite(t.x)&&t.lengthSq()>0.001){
       const c=cx.getCenter(new THREE.Vector3());
       ctl.alvo.copy(c); chaoY=cx.min.y+t.y*0.06; ctl.alvo.y=chaoY+1.4;
-      ctl.dist=Math.max(3,Math.hypot(t.x,t.z)*0.55);
       a.limite={x:[cx.min.x,cx.max.x],z:[cx.min.z,cx.max.z],yTeto:cx.max.y};
       a.medido={l:t.x,a:t.y,p:t.z};
     }
   }
+  /* só agora se sabe onde é o chão deste ambiente: sem isto a primeira volta
+     do laço andaria a partir da posição do ambiente anterior */
+  plantarNoChao();
   $('#cap').textContent=a.nome;
-  hud('ambiente pronto');
+  hud('caminhando — W A S D, Shift corre, C agacha');
   $('#carga').style.display='none';
   window.__WS_OK=true;
   /* o cronômetro do cômodo começa quando a cena aparece, não quando o download
@@ -1147,13 +1146,6 @@ function sincronizarAbas(){ $$('#abas button').forEach(b=>b.classList.toggle('on
 $$('#abas button').forEach(b=>b.onclick=()=>{EST.aba=b.dataset.aba; sincronizarAbas(); painel();});
 $('#puxar').onclick=()=>{ const l=$('#lado'); l.classList.toggle('oculto');
   $('#puxar').textContent=l.classList.contains('oculto')?'›':'‹'; setTimeout(redim,270); };
-$('#btAndar').onclick=()=>{
-  ctl.orbita=!ctl.orbita;
-  $('#btAndar').classList.toggle('on',!ctl.orbita);
-  $('#btAndar').textContent=ctl.orbita?'Caminhar':'Órbita';
-  if(!ctl.orbita){ cam.position.set(ctl.alvo.x,chaoY+1.6,ctl.alvo.z);
-    hud('caminhando — W A S D, Shift corre, C agacha'); }
-};
 $('#btMedir').onclick=()=>modo(EST.modo==='medir'?null:'medir');
 $('#btPassagem').onclick=()=>modo(EST.modo==='passagem'?null:'passagem');
 $('#btMovel').onclick=()=>modo(EST.modo==='movel'?null:'movel');
@@ -1461,7 +1453,8 @@ function sessaoPacote(){
     ambienteId:a.id||null,
     camera:{x:+cam.position.x.toFixed(3), y:+cam.position.y.toFixed(3),
             z:+cam.position.z.toFixed(3), yaw:+ctl.yaw.toFixed(4),
-            pitch:+ctl.pitch.toFixed(4), orbita:ctl.orbita},
+            /* o campo continua no contrato; a camada só não tem mais órbita */
+            pitch:+ctl.pitch.toFixed(4), orbita:false},
     atencao:at.porNome,
     atencaoPorId:at.porId,
     tempoTotalS:at.total,
@@ -1583,46 +1576,44 @@ function laco(){
   const agora=performance.now(), dt=Math.min((agora-ult)/1000,0.05); ult=agora;
   ctl.yaw+=ctl.vy; ctl.pitch+=ctl.vp; ctl.vy*=0.82; ctl.vp*=0.82;
 
-  if(!ctl.orbita){
-    const correndo=!!tecla.ShiftLeft, agachado=!!tecla.KeyC;
-    const alvoVel=correndo?3.1:agachado?0.7:1.45;
-    const f=new THREE.Vector3(); cam.getWorldDirection(f); f.y=0; f.normalize();
-    const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).normalize();
-    const dir=new THREE.Vector3();
-    if(tecla.KeyW) dir.add(f); if(tecla.KeyS) dir.sub(f);
-    if(tecla.KeyA) dir.sub(r); if(tecla.KeyD) dir.add(r);
-    const andando=dir.lengthSq()>0; if(andando) dir.normalize();
-    ANDAR.vel.lerp(dir.multiplyScalar(alvoVel), Math.min(1,(andando?9:13)*dt));
-    if(ANDAR.vel.lengthSq()<1e-5) ANDAR.vel.set(0,0,0);
-    const passoV=ANDAR.vel.clone().multiplyScalar(dt);
-    if(passoV.lengthSq()>0){
-      const d=passoV.clone().normalize();
-      if(malhas.length && bloqueado(cam.position.clone(),d,Math.max(0.4,passoV.length()+0.35)))
-        ANDAR.vel.multiplyScalar(0.2);
-      else cam.position.add(passoV);
-    }
-    /* sem colisor, a nuvem define até onde dá para andar */
-    const lim=(AMBIENTES[EST.atual]||{}).limite;
-    if(!malhas.length && lim){
-      const f=0.6;
-      cam.position.x=clamp(cam.position.x,lim.x[0]+f,lim.x[1]-f);
-      cam.position.z=clamp(cam.position.z,lim.z[0]+f,lim.z[1]-f);
-    }
-    const chao=alturaDoChao(cam.position.x,cam.position.z);
-    const alvoY=(chao!==null?chao:chaoY)+1.6+(agachado?-0.45:0);
-    cam.position.y += (alvoY-cam.position.y)*Math.min(1,9*dt);
-    const rapidez=ANDAR.vel.length();
-    if(ANDAR.conforto){ ANDAR.bob=0; ANDAR.lat=0; }
-    else{
-      ANDAR.fase+=dt*(2.9+rapidez*1.35);
-      const amp=Math.min(rapidez/3.1,1)*(agachado?0.014:0.028);
-      ANDAR.bob=Math.abs(Math.sin(ANDAR.fase))*amp;
-      ANDAR.lat=Math.sin(ANDAR.fase*0.5)*amp*0.55;
-    }
-  } else { ANDAR.vel.set(0,0,0); ANDAR.bob=0; ANDAR.lat=0; }
+  const correndo=!!tecla.ShiftLeft, agachado=!!tecla.KeyC;
+  const alvoVel=correndo?3.1:agachado?0.7:1.45;
+  const f=new THREE.Vector3(); cam.getWorldDirection(f); f.y=0; f.normalize();
+  const r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).normalize();
+  const dir=new THREE.Vector3();
+  if(tecla.KeyW) dir.add(f); if(tecla.KeyS) dir.sub(f);
+  if(tecla.KeyA) dir.sub(r); if(tecla.KeyD) dir.add(r);
+  const andando=dir.lengthSq()>0; if(andando) dir.normalize();
+  ANDAR.vel.lerp(dir.multiplyScalar(alvoVel), Math.min(1,(andando?9:13)*dt));
+  if(ANDAR.vel.lengthSq()<1e-5) ANDAR.vel.set(0,0,0);
+  const passoV=ANDAR.vel.clone().multiplyScalar(dt);
+  if(passoV.lengthSq()>0){
+    const d=passoV.clone().normalize();
+    if(malhas.length && bloqueado(cam.position.clone(),d,Math.max(0.4,passoV.length()+0.35)))
+      ANDAR.vel.multiplyScalar(0.2);
+    else cam.position.add(passoV);
+  }
+  /* sem colisor, a nuvem define até onde dá para andar */
+  const lim=(AMBIENTES[EST.atual]||{}).limite;
+  if(!malhas.length && lim){
+    const m=0.6;
+    cam.position.x=clamp(cam.position.x,lim.x[0]+m,lim.x[1]-m);
+    cam.position.z=clamp(cam.position.z,lim.z[0]+m,lim.z[1]-m);
+  }
+  const chao=alturaDoChao(cam.position.x,cam.position.z);
+  const alvoY=(chao!==null?chao:chaoY)+1.6+(agachado?-0.45:0);
+  cam.position.y += (alvoY-cam.position.y)*Math.min(1,9*dt);
+  const rapidez=ANDAR.vel.length();
+  if(ANDAR.conforto){ ANDAR.bob=0; ANDAR.lat=0; }
+  else{
+    ANDAR.fase+=dt*(2.9+rapidez*1.35);
+    const amp=Math.min(rapidez/3.1,1)*(agachado?0.014:0.028);
+    ANDAR.bob=Math.abs(Math.sin(ANDAR.fase))*amp;
+    ANDAR.lat=Math.sin(ANDAR.fase*0.5)*amp*0.55;
+  }
 
   aplicarCam();
-  if(!ctl.orbita && (ANDAR.bob||ANDAR.lat)){
+  if(ANDAR.bob||ANDAR.lat){
     const lado=new THREE.Vector3(1,0,0).applyQuaternion(cam.quaternion);
     cam.position.y+=ANDAR.bob; cam.position.addScaledVector(lado,ANDAR.lat);
   }
