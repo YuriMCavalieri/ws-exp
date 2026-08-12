@@ -475,6 +475,10 @@ body.visita #visitBtn{border-color:var(--ouro);color:var(--ouro)}
 #imovelBar .ib-m{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 #imovelBar .ib-m span{font-size:10.5px;background:rgba(248,246,240,.09);border-radius:9px;padding:2px 8px}
 #imovelBar .ib-p{font-size:16px;font-weight:700;color:var(--ouro);margin-top:3px}
+/* O selo do ambiente gerado. Discreto, mas legível — a regra é que ele apareça,
+   não que ele desapareça bonito. */
+#imovelBar .ib-selo{font-size:10px;line-height:1.5;color:rgba(248,246,240,.62);
+  margin-top:7px;padding-top:7px;border-top:1px solid rgba(248,246,240,.13)}
 #imovelBar .ib-a{display:flex;gap:6px;margin-top:8px}
 #imovelBar .ib-a button{flex:1;border:1px solid rgba(248,246,240,.22);border-radius:9px;
   padding:7px 8px;font-size:11.5px;color:var(--marfim);transition:all var(--tr)}
@@ -2170,6 +2174,14 @@ function gerarMovel(req){
     }
     $('#atGo').textContent='Criar outro';
     $('#atGo').disabled=false;
+    /* O móvel criado é catálogo novo: alimenta o marketplace de mobília do
+       lado de fora. `glb` só vai quando o serviço de geração respondeu — sem
+       ele o item existe como volume com as medidas informadas, e prometer um
+       modelo que não existe faria a aplicação gravar um ponteiro quebrado. */
+    enviarAoApp({tipo:'ws:atelier-movel', item:{
+      sku, nome:req.nome, categoria:req.grupo||'Meus móveis', preco:req.preco||0,
+      dimensoes:{largura:req.w, profundidade:req.d, altura:req.h},
+      loja:null, licenca:'autoral', glb:url||null }});
     setTimeout(()=>{
       fecharAtelier();
       setHint('"'+req.nome+'" entrou no ambiente — arraste na planta para posicionar.');
@@ -2756,6 +2768,109 @@ function importFile(file){
 }
 $('#btnExport').onclick=exportModel;
 
+/* ==========================================================================
+   CONTRATO DE MENSAGENS — a fronteira entre esta camada e a aplicação.
+
+   Porte do bloco que o walkthrough (WS_MINT.html) já usa. Antes daqui o Studio
+   emitia tudo com `postMessage(carga,'*')` e aceitava comando de qualquer
+   origem. As duas metades do mesmo defeito:
+
+     · emitir para '*' entrega o `ws:lead` — nome, telefone, e-mail e o que a
+       pessoa olhou — a QUALQUER página que embuta esta camada;
+     · aceitar de qualquer origem deixa essa mesma página injetar
+       `ws:carregar-imovel` e mandar o Studio abrir o que ela quiser.
+
+   Quatro regras, as mesmas do WS_MINT:
+     1. origem de saída sempre exata, nunca '*';
+     2. origem de entrada conferida contra a lista, e e.source === parent;
+     3. a lista é constante no código — nunca vem da URL. Origem lida de query
+        seria escolhida pelo atacante que embutisse a camada;
+     4. embutido, o Studio NÃO trava esperando imóvel: ele é um editor, e a
+        tela vazia é um estado legítimo de trabalho. Isso o separa do
+        walkthrough, que espera — lá, abrir o acervo de demonstração mostraria
+        um espaço que não é o imóvel; aqui, a tela vazia não afirma nada.
+   ========================================================================== */
+
+const VERSAO_CONTRATO=1;
+const CAMADA='studio';
+
+/* As origens das APLICAÇÕES que podem comandar esta camada. Duas marcas rodam
+   o mesmo produto (White Stone e Mafuz) e as duas embutem as mesmas camadas.
+   Constante no código de propósito — ver o cabeçalho desta seção.
+
+   PRECISA concordar com a lista `ORIGENS_APP` do 07-referencia/publicar-camadas.mjs,
+   que vira o `frame-ancestors`: aquela decide se o iframe carrega, esta decide
+   se as mensagens são entregues. Corrigir só uma troca o bloqueio visível por
+   um travamento silencioso. `npm run test:contrato` reprova quando divergem. */
+const ORIGENS_APP=[
+  'https://whitestone.living',
+  'https://www.whitestone.living',
+  'https://mafuz.com.br',
+  'https://www.mafuz.com.br',
+  'https://staging.whitestone.living',
+  'https://white-stone.pages.dev',
+];
+/* Em desenvolvimento a camada e a aplicação podem estar em portas diferentes.
+   Só vale quando a própria camada está em localhost — nunca em produção. */
+const EM_DEV=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const LOCAL=/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
+
+function origemPermitida(o){
+  if(ORIGENS_APP.includes(o)) return true;
+  return EM_DEV && LOCAL.test(o);
+}
+/* Lista para EMISSÃO e para a mensagem de diagnóstico. Em dev inclui a própria
+   origem, que cobre o caso de app e camada compartilharem servidor. */
+const ORIGENS=EM_DEV ? ORIGENS_APP.concat(location.origin) : ORIGENS_APP;
+
+const EMBUTIDO = parent!==window;
+
+/* Para qual origem responder. O referrer dá o pai; só é aceito se estiver na
+   lista. Sem referrer (alguns Referrer-Policy), emitimos para cada origem
+   permitida: o navegador só entrega àquela que de fato for o pai. */
+function origensDeSaida(){
+  try{
+    if(document.referrer){
+      const o=new URL(document.referrer).origin;
+      if(origemPermitida(o)) return [o];
+    }
+  }catch(e){}
+  return ORIGENS;
+}
+const SAIDA=origensDeSaida();
+
+function enviarAoApp(msg){
+  if(!EMBUTIDO) return;
+  const carga={...msg, v:VERSAO_CONTRATO, camada:CAMADA};
+  for(const o of SAIDA){
+    try{ parent.postMessage(carga,o); }catch(e){}
+  }
+}
+
+/* ------------------------------------------------- autosave do Space Model --
+   O projeto só saía daqui quando o usuário clicava em "Publicar no WS Global
+   3D". Quem desenhava a planta inteira e fechava a aba antes de publicar
+   perdia tudo: não havia caminho até o banco. É o mesmo defeito que o
+   walkthrough tinha com passagens e pinos, e a correção é a mesma — emitir a
+   autoria sozinha, com debounce.
+
+   2,5 s, e não os 1,5 s do walkthrough: o `space` é ordens de grandeza maior
+   (dezenas a centenas de KB contra alguns KB do grafo de cômodos), e cada
+   emissão é uma clonagem estruturada desse objeto inteiro. Agrupar mais a
+   rajada de desenho vale mais aqui do que chegar meio segundo antes.
+
+   A aplicação decide o que fazer com isso — versionar, jogar em jsonb, ou
+   ignorar. Esta camada não sabe que existe um banco do outro lado. */
+let tSpace=null;
+function spaceMudou(){
+  if(!EMBUTIDO) return;
+  clearTimeout(tSpace);
+  tSpace=setTimeout(()=>{
+    enviarAoApp({tipo:'ws:space-model',
+      imovelId:(imovelDoMundo&&imovelDoMundo.id)||null, space:deep(model)});
+  },2500);
+}
+
 /* ---------- ponte com o WS Mundo 3D ---------- */
 const ENDERECOS=[
   {id:'ws-one', n:'WS One Vila da Serra', e:'Al. Oscar Niemeyer — Vila da Serra'},
@@ -2770,6 +2885,11 @@ const ENDERECOS=[
    partir da ficha do anúncio — mesma engine, mesma experiência.
    ================================================================ */
 let imovelDoMundo=null;
+/* true quando a planta veio de `genImovel` a partir da ficha, e não de um
+   Space Model salvo. É a diferença entre "esta é a planta deste imóvel" e
+   "esta é uma planta compatível com o que o anúncio declara" — e a segunda
+   precisa dizer isso na tela. Ver WORKERWS.md §7. */
+let plantaGerada=false;
 function carregarImovelDoMundo(im, space){
   if(!im) return;
   if(imovelDoMundo && imovelDoMundo.id===im.id && space===undefined) return;
@@ -2787,8 +2907,10 @@ function carregarImovelDoMundo(im, space){
     $('#projName').value=model.nome;
     S.sel=null; S.floorIdx=0;
     fitView(); refreshAll();
+    plantaGerada=false;
   } else {
     /* gera pela ficha do anúncio — planta coerente com o que está publicado */
+    plantaGerada=true;
     const q=clamp(im.quartos||2,1,4), s=clamp(im.suites||0,0,q);
     const alto=(im.preco||0)>2500000 || (im.area||0)>200;
     genImovel({
@@ -2818,6 +2940,9 @@ function carregarImovelDoMundo(im, space){
       ${im.andar?`<span>${im.andar}º andar</span>`:''}
     </div>
     ${im.preco?`<div class="ib-p">${fmtR(im.preco)}</div>`:''}
+    ${plantaGerada?`<div class="ib-selo">Representação ilustrativa — planta gerada a partir da
+      ficha do anúncio (${im.quartos||'?'} quartos, ${im.area?im.area+' m²':'área não informada'}).
+      Não é a planta cadastrada deste imóvel.</div>`:''}
     <div class="ib-a">
       <button id="ibEditar">Personalizar</button>
       <button id="ibVoltar">Voltar ao mundo</button>
@@ -2828,9 +2953,7 @@ function carregarImovelDoMundo(im, space){
     setMode('orbit');
     setHint('Modo de edição — personalize este imóvel à vontade. Tudo do Studio está disponível.');
   };
-  $('#ibVoltar').onclick=()=>{
-    try{ if(parent!==window) parent.postMessage({tipo:'ws:voltar-mundo'},'*'); }catch(e){}
-  };
+  $('#ibVoltar').onclick=()=>{ enviarAoApp({tipo:'ws:voltar-mundo'}); };
 }
 
 function enviarParaMundo(){
@@ -2868,11 +2991,20 @@ function enviarParaMundo(){
     const idEnd=m.querySelector('#pubEnd').value;
     model.andar=clamp(+m.querySelector('#pubAndar').value||18,1,40);
     if(model.tipo_imovel!=='apartamento') model.tipo_imovel='apartamento';
-    const pacote={ tipo:'ws:space-model', space:deep(model), imovelId:idEnd, abrirImovel:idEnd };
     let ok=false;
-    try{ localStorage.setItem('ws_space_atual', JSON.stringify(model));
-         localStorage.setItem('ws_space_'+idEnd, JSON.stringify(model)); ok=true; }catch(e){}
-    try{ if(parent!==window){ parent.postMessage(pacote,'*'); ok=true; } }catch(e){}
+    /* Embutido, quem guarda é a aplicação. O espelho em localStorage existe
+       para a camada solta — ali não há banco nenhum do outro lado. Escrever os
+       dois seria gravar um projeto de centenas de KB por endereço publicado na
+       origem das camadas, que é compartilhada por todas as marcas e tem cota
+       de alguns MB: o primeiro projeto grande estoura e leva junto o que já
+       estava gravado. */
+    if(!EMBUTIDO){
+      try{ localStorage.setItem('ws_space_atual', JSON.stringify(model));
+           localStorage.setItem('ws_space_'+idEnd, JSON.stringify(model)); ok=true; }catch(e){}
+    }else{
+      enviarAoApp({tipo:'ws:space-model', space:deep(model), imovelId:idEnd, abrirImovel:idEnd});
+      ok=true;
+    }
     closeModal();
     const end=ENDERECOS.find(e=>e.id===idEnd);
     const m2=openModal(`
@@ -2889,20 +3021,64 @@ function enviarParaMundo(){
     m2.querySelector('[data-c]').onclick=closeModal;
     m2.querySelector('[data-ir]').onclick=()=>{
       closeModal();
-      try{ if(parent!==window) parent.postMessage({tipo:'ws:ir-para-mundo'},'*'); }catch(e){}
+      enviarAoApp({tipo:'ws:ir-para-mundo'});
     };
     scheduleRebuild();
   };
 }
 $('#btnMundo').onclick=enviarParaMundo;
-try{ if(parent!==window) parent.postMessage({tipo:'ws:studio-pronto'},'*'); }catch(e){}
+
+/* ----------------------------------------------------- handshake e comandos --
+   `ws:pronto` é o nome canônico do contrato v1. `ws:studio-pronto` continua
+   saindo junto por um release porque é o que uma aplicação publicada antes
+   desta versão escuta — o bridge normaliza os dois para o mesmo evento, e
+   quem estiver velho do outro lado não fica esperando para sempre. */
+enviarAoApp({tipo:'ws:pronto'});
+enviarAoApp({tipo:'ws:studio-pronto'});
+
+/* Se nada chegar, é provável falha de integração — mas NÃO é fatal aqui: o
+   Studio embutido em tela vazia é um editor esperando alguém desenhar, o que
+   é um estado de trabalho legítimo. Dizemos no console e seguimos. */
+if(EMBUTIDO) setTimeout(()=>{
+  if(imovelDoMundo) return;
+  console.info('[WS] a camada anunciou ws:pronto e nenhum ws:carregar-imovel chegou em 20 s.\n'+
+    'Se isso não era esperado, verifique nesta ordem:\n'+
+    '  1. a aplicação escuta ws:pronto e só então envia ws:carregar-imovel;\n'+
+    '  2. a origem configurada no WsBridge é exatamente esta camada;\n'+
+    '  3. esta camada aceita a origem da aplicação — a lista é ORIGENS_APP.\n'+
+    'Origens aceitas aqui: '+ORIGENS.join(' · ')+'\n'+
+    'Origem do pai (referrer): '+(document.referrer||'não informada'));
+},20000);
+
 addEventListener('message', ev=>{
+  /* Regra 3 do contrato. Sem estas duas linhas, qualquer página que embuta o
+     Studio comanda o que ele carrega. */
+  if(!origemPermitida(ev.origin)) return;
+  if(ev.source!==parent) return;
   const d=ev.data;
-  if(d && d.tipo==='ws:abrir-atelier'){ abrirAtelier(); return; }
-  if(d && d.tipo==='ws:carregar-imovel'){ carregarImovelDoMundo(d.imovel, d.space); return; }
-  if(d && d.tipo==='ws:pedir-space'){
-    try{ parent.postMessage({tipo:'ws:space-model', space:deep(model), imovelId:d.imovelId||'ws-one'},'*'); }catch(e){}
-  }
+  if(!d || typeof d!=='object') return;
+  if(typeof d.tipo!=='string' || !d.tipo.startsWith('ws:')) return;
+  try{
+    switch(d.tipo){
+      case 'ws:abrir-atelier':
+      case 'ws:atelier-abrir':
+        abrirAtelier();
+        break;
+      case 'ws:carregar-imovel':
+        carregarImovelDoMundo(d.imovel, d.space);
+        break;
+      case 'ws:pedir-space':
+        /* Padrão pedido/resposta: usado antes de trocar de rota, para gravar
+           sem esperar o debounce de 2,5 s do autosave. */
+        clearTimeout(tSpace);
+        enviarAoApp({tipo:'ws:space-model',
+          imovelId:d.imovelId||(imovelDoMundo&&imovelDoMundo.id)||null,
+          space:deep(model)});
+        break;
+      /* Regra 6 do contrato: comando desconhecido é ignorado em silêncio, para
+         que uma aplicação nova não quebre uma camada velha. */
+    }
+  }catch(err){ console.warn('[WS] comando '+d.tipo+' falhou:', err&&err.message); }
 });
 $('#btnImport').onclick=()=>$('#fileJson').click();
 $('#fileJson').addEventListener('change', e=>{ if(e.target.files[0]) importFile(e.target.files[0]); e.target.value=''; });
@@ -4645,6 +4821,11 @@ function buildMob(sku){
 let rebuildTimer=null;
 function scheduleRebuild(){
   updateEmpty();
+  /* Todo caminho que muda o modelo passa por aqui antes de redesenhar. É o
+     único ponto de coleta que não exige lembrar de chamar o autosave em cada
+     uma das dezenas de operações de edição — e esquecer numa delas seria
+     perder exatamente o trabalho que ela representa. */
+  spaceMudou();
   clearTimeout(rebuildTimer);
   rebuildTimer=setTimeout(()=>{ recomputeAreas(); rebuild3D(); }, 120);
 }
@@ -5348,6 +5529,12 @@ function cartSync(){
   $('#cartV').textContent=fmtR(cartTotal());
   for(const pn of mobPins) if(pn.el) pn.el.classList.toggle('incart', cartTem(pn.mobId));
   if(movelSel) renderCardMovel();
+  /* O carrinho existia e nunca saía do iframe: ia só dentro do `ws:lead`, o
+     que significa que quem NÃO deixou contato — a maioria — não produzia
+     sinal nenhum de interesse por mobília. `mobId` fica de fora: é id de
+     objeto de cena desta sessão, não diz nada do lado de lá. */
+  enviarAoApp({tipo:'ws:carrinho',
+    itens:CART.map(i=>({sku:i.sku||'', nome:i.nome, preco:i.preco||0}))});
 }
 function cartAdd(pn){
   if(cartTem(pn.mobId)) return;
@@ -5526,11 +5713,19 @@ $('#leadBtn').onclick=()=>{
       carrinho:CART.map(i=>({item:i.nome, preco:i.preco})),
       valor_carrinho:cartTotal(), quando:new Date().toISOString()
     };
-    try{
-      const lst=JSON.parse(localStorage.getItem('ws_leads')||'[]');
-      lst.push(lead); localStorage.setItem('ws_leads', JSON.stringify(lst));
-    }catch(e){}
-    try{ if(parent!==window) parent.postMessage({tipo:'ws:lead', lead},'*'); }catch(e){}
+    /* LGPD. Embutido, o lead vai para a aplicação e NÃO fica no localStorage
+       desta origem: nome, telefone e e-mail são dado pessoal, e a origem das
+       camadas é compartilhada por todas as marcas — um lead da White Stone
+       gravado aqui é legível por qualquer camada que a Mafuz embuta depois.
+       Solto, o espelho local é a única memória que existe. */
+    if(EMBUTIDO){
+      enviarAoApp({tipo:'ws:lead', lead});
+    }else{
+      try{
+        const lst=JSON.parse(localStorage.getItem('ws_leads')||'[]');
+        lst.push(lead); localStorage.setItem('ws_leads', JSON.stringify(lst));
+      }catch(e){}
+    }
     closeModal();
     const res=resumoAtencao();
     const m2=openModal(`

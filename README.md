@@ -31,7 +31,7 @@ geometria a partir de vídeo de baixa qualidade.
 |---|---|
 | Linhas de JavaScript | **12.855** |
 | Linhas de CSS | 1.263 |
-| Testes automatizados | **241** |
+| Testes automatizados | **254** |
 | Tipos de mensagem no contrato | **21** |
 | Dependências de build | **0** |
 
@@ -91,11 +91,11 @@ volta em tela preta. Desmonte de verdade ao trocar de rota; não esconda com
 ## Testes
 
 ```bash
-npm test            # todas as suítes — 241 testes
+npm test            # todas as suítes — 254 testes
 npm run test:rapido # as rápidas, sem o Studio
 ```
 
-**241 testes verdes** (Node 22+). Detalhe por suíte, e por que o número saiu de
+**254 testes verdes** (Node 22+). Detalhe por suíte, e por que o número saiu de
 161 para 218, em `05-testes/05-COMO-RODAR-OS-TESTES.md`.
 
 ## Publicar

@@ -25,6 +25,18 @@ const BRIDGE   = ler('03-contrato', 'ws-bridge.js');
 const CAMADA   = ler('03-contrato', 'WsCamada.tsx');
 const CONTRATO = ler('03-contrato', 'CONTRATO-DE-MENSAGENS.md');
 const SCHEMA   = JSON.parse(ler('03-contrato', 'ws-mensagens.schema.json'));
+const STUDIO   = ler('02-camadas', 'studio-3d', 'WS_STUDIO.html');
+const MINT     = ler('02-camadas', 'walkthrough', 'WS_MINT.html');
+const PUBLICAR = ler('07-referencia', 'publicar-camadas.mjs');
+
+/** As origens de uma lista `const ORIGENS_APP=[...]` em qualquer dos arquivos. */
+const origensDe = (texto) => {
+  const bloco = texto.match(/const ORIGENS_APP\s*=\s*\[([\s\S]*?)\];/);
+  return bloco ? [...bloco[1].matchAll(/'(https:\/\/[^']+)'/g)].map(m => m[1]) : null;
+};
+/** O código sem comentários — para não achar `postMessage(…,'*')` numa nota. */
+const semComentarios = (texto) =>
+  texto.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 let ok = 0, falhas = [];
 const t = (nome, fn) => {
@@ -187,6 +199,122 @@ t('o schema proibe as fotos dentro do pedido de mundo', () => {
 t('o contrato registra a direcao certa de ws:pedido-mundo', () => {
   certo(/ws:pedido-mundo[^\n]*camada\s*→\s*app/.test(CONTRATO),
     'a tabela do contrato dizia "app -> camada", mas quem emite e a camada');
+});
+
+/* ==================================== 6. o Studio como camada embutível ==== */
+/* O Studio ficou para trás quando o walkthrough foi endurecido: emitia tudo
+   para '*' e aceitava comando de qualquer origem. Estes testes existem para
+   que isso não volte — cada um deles corresponde a um defeito que estava no
+   arquivo antes de 2026-08-12. */
+console.log('\no Studio embutido');
+
+t('o Studio valida a origem de quem manda comando', () => {
+  certo(/origemPermitida\(/.test(STUDIO), 'sem funcao de validacao de origem');
+  const l = STUDIO.replace(/\s/g, '');
+  certo(/if\(!origemPermitida\(ev\.origin\)\)return/.test(l),
+    'sem isso, qualquer pagina que embuta o Studio manda ws:carregar-imovel');
+  certo(/if\(ev\.source!==parent\)return/.test(l),
+    'origem certa vinda de outra janela — um iframe irmao, uma popup — ainda '
+    + 'precisa ser recusada');
+});
+
+t('nenhuma emissao do Studio usa destino curinga', () => {
+  const codigo = semComentarios(STUDIO);
+  certo(!/postMessage\([^;]*'\*'\)/.test(codigo),
+    "postMessage(...,'*') entrega o ws:lead — nome, telefone, e-mail — a "
+    + 'qualquer pagina que embuta a camada');
+});
+
+t('o Studio anuncia ws:pronto com versao e camada', () => {
+  certo(/enviarAoApp\(\{tipo:'ws:pronto'\}\)/.test(STUDIO), 'nao emite o nome canonico');
+  certo(/ws:studio-pronto/.test(STUDIO),
+    'o nome legado precisa sair junto por um release: e o que uma aplicacao '
+    + 'publicada antes desta versao escuta');
+  const env = (STUDIO.match(/function enviarAoApp\(msg\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/v:VERSAO_CONTRATO/.test(env) && /camada:CAMADA/.test(env),
+    'regra 2 do contrato: toda mensagem carrega a versao');
+});
+
+t('o projeto do Studio chega ao banco sem depender do botao publicar', () => {
+  certo(/function spaceMudou\(\)/.test(STUDIO),
+    'sem autosave, quem desenha a planta e fecha a aba antes de publicar perde '
+    + 'tudo — nao havia caminho nenhum ate o banco');
+  const sched = (STUDIO.match(/function scheduleRebuild\(\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/spaceMudou\(\)/.test(sched),
+    'o autosave precisa pendurar no ponto por onde TODA edicao passa; chamar '
+    + 'em cada operacao e esquecer numa delas perde justamente aquele trabalho');
+});
+
+t('ws:pedir-space responde sem esperar o debounce', () => {
+  const bloco = (STUDIO.match(/case 'ws:pedir-space':[\s\S]*?break;/) || [''])[0];
+  certo(bloco, 'o Studio nao trata ws:pedir-space');
+  certo(/clearTimeout\(tSpace\)/.test(bloco),
+    'deixar o autosave pendente reenvia o mesmo space 2,5 s depois de ja ter '
+    + 'respondido — e a aplicacao grava duas versoes iguais');
+});
+
+t('o carrinho e o Atelier saem do iframe', () => {
+  const cs = (STUDIO.match(/function cartSync\(\)\{[\s\S]*?\n\}/) || [''])[0];
+  certo(/ws:carrinho/.test(cs),
+    'o carrinho so viajava dentro do ws:lead: quem NAO deixou contato — a '
+    + 'maioria — nao produzia sinal nenhum de interesse por mobilia');
+  certo(/ws:atelier-movel/.test(STUDIO), 'o movel criado no Atelier nao alimenta o catalogo');
+});
+
+t('o lead nao fica no localStorage da origem compartilhada', () => {
+  /* O bloco inteiro: do `if(EMBUTIDO)` ate depois da gravacao local. */
+  const bloco = (STUDIO.match(/if\(EMBUTIDO\)\{[\s\S]{0,600}?ws_leads[\s\S]{0,200}?\n {4}\}/) || [''])[0];
+  certo(bloco, 'o lead precisa de caminhos distintos para embutido e solto');
+  certo(/enviarAoApp\(\{tipo:'ws:lead'/.test(bloco) && /\}else\{/.test(bloco),
+    'o espelho local so faz sentido solto: a origem das camadas e compartilhada '
+    + 'por todas as marcas, e dado pessoal gravado ali e legivel por qualquer '
+    + 'camada que outra marca embuta depois');
+  certo(!/localStorage[\s\S]{0,80}ws_leads/.test(bloco.split('}else{')[0]),
+    'gravar o lead antes do ramo embutido anula a separacao');
+});
+
+t('planta gerada da ficha aparece declarada como ilustrativa', () => {
+  certo(/plantaGerada/.test(STUDIO), 'sem distinguir Space Model salvo de planta gerada');
+  certo(/Representa[çc][ãa]o ilustrativa/i.test(STUDIO),
+    'WORKERWS.md §7: um ambiente gerado exibido sob o nome de um imovel precisa '
+    + 'dizer na tela que nao e a planta cadastrada dele');
+});
+
+t('o Studio embutido NAO trava esperando imovel', () => {
+  /* Diferente do walkthrough de proposito: la, abrir a demonstracao mostraria
+     um espaco que nao e o imovel; aqui a tela vazia e um editor esperando
+     alguem desenhar, que e estado de trabalho legitimo. */
+  certo(!/falhou\([^)]*ws:pronto/.test(STUDIO),
+    'o Studio e um editor: tela vazia embutida nao afirma nada de errado, e '
+    + 'transformar isso em erro fatal quebraria o uso autoral');
+  certo(/console\.info\('\[WS\]/.test(STUDIO),
+    'ainda assim, 20 s sem imovel e provavel falha de integracao e merece uma '
+    + 'linha no console em vez de silencio');
+});
+
+/* ==================================== 7. as duas metades da origem ========= */
+console.log('\nas duas listas de origem');
+
+t('camada e frame-ancestors listam as mesmas origens', () => {
+  const noDeploy = origensDe(PUBLICAR);
+  certo(noDeploy, 'publicar-camadas.mjs sem ORIGENS_APP');
+  for (const [nome, texto] of [['WS_MINT.html', MINT], ['WS_STUDIO.html', STUDIO]]) {
+    const naCamada = origensDe(texto);
+    certo(naCamada, nome + ' sem ORIGENS_APP');
+    const faltando = noDeploy.filter(o => !naCamada.includes(o));
+    certo(faltando.length === 0,
+      nome + ' recusa origens que o frame-ancestors libera: ' + faltando.join(', ')
+      + ' — o iframe carrega e ignora todo comando, e a camada fica '
+      + '"carregando" para sempre');
+  }
+});
+
+t('o publicar-camadas confere TODAS as camadas, nao so o WS_MINT', () => {
+  certo(!/readFileSync\(path\.join\(SAIDA, 'WS_MINT\.html'\)/.test(PUBLICAR),
+    'conferir uma camada so deixa a divergencia da outra passar sem aviso — '
+    + 'que e exatamente o modo de falha que essa verificacao existe para pegar');
+  certo(/for \(const nome of Object\.keys\(CAMADAS\)\)/.test(PUBLICAR),
+    'a verificacao precisa iterar sobre as camadas publicadas');
 });
 
 console.log('\n' + '─'.repeat(58));

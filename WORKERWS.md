@@ -156,7 +156,7 @@ contexto, derrubaria.
 
 ### 5.4 · Os testes continuam valendo
 
-São **243** neste repositório. Boa parte deles descreve regras de produto que
+São **254** neste repositório. Boa parte deles descreve regras de produto que
 não estão escritas em nenhum outro lugar: a física de caminhada, a ordem de
 carregamento das páginas de LOD, o vigia de tela preta, o corte de ociosidade
 do cronômetro de atenção.

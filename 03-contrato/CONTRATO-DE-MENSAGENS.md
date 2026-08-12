@@ -62,8 +62,11 @@ Emitido assim que a camada terminou de carregar e está apta a receber comandos.
 ```json
 { "tipo": "ws:pronto", "v": 1, "camada": "mundo|studio|atelier|tour|walkthrough" }
 ```
-> Hoje o código emite `ws:mundo-pronto` e `ws:studio-pronto`. O bridge normaliza
-> os dois para `ws:pronto` com o campo `camada`.
+> O Walkthrough e o Studio já emitem `ws:pronto`. O Studio emite também o
+> legado `ws:studio-pronto`, por um release, porque é o que uma aplicação
+> publicada antes desta versão escuta. O Mundo ainda emite só
+> `ws:mundo-pronto`. O bridge normaliza os três para `ws:pronto` com o campo
+> `camada`.
 
 ### `ws:lead` — **o evento que gera receita**
 Emitido quando um visitante deixa contato dentro da experiência 3D.
@@ -100,7 +103,8 @@ nunca deve ir para logs de cliente e exige consentimento registrado antes do
 envio.
 
 ### `ws:space-model` — o projeto autoral
-Emitido quando o usuário salva ou exporta um projeto no WS Studio.
+Emitido pelo WS Studio **a cada 2,5 s de edição** (a camada agrupa a rajada de
+desenho), quando o usuário publica no mundo, e em resposta a `ws:pedir-space`.
 
 ```json
 { "tipo": "ws:space-model", "v": 1,
@@ -110,6 +114,12 @@ Emitido quando o usuário salva ou exporta um projeto no WS Studio.
 O objeto `space` é o **formato canônico do imóvel autoral**. Ele é grande
 (dezenas a centenas de KB) e deve ir para `jsonb` no Postgres ou para object
 storage com ponteiro — nunca para `localStorage` em produção.
+
+**Do lado da aplicação:** gravar versionado, e **estrangular a escrita**. A
+camada emite a cada 2,5 s porque a alternativa é perder o desenho de quem fecha
+a aba sem publicar; gravar uma versão a cada 2,5 s seria uma linha de dezenas
+de KB por rabisco. Uma a cada 30 s, mais a que vem de `ws:pedir-space` no
+fechamento, cobre o caso sem inundar a tabela.
 
 ### `ws:entrar-imovel` · `ws:entrar-walkthrough`
 Emitidos quando o usuário escolhe entrar num imóvel a partir do mundo 3D.
@@ -126,7 +136,8 @@ A regra de produto vigente é que "entrar no imóvel" pelo mundo 3D leva ao
 Walkthrough, não ao Studio.
 
 ### `ws:carrinho`
-Emitido a cada mudança de carrinho dentro do Tour 360 ou do Walkthrough.
+Emitido a cada mudança de carrinho dentro do Tour 360, do Walkthrough ou do
+Studio.
 
 ```json
 { "tipo": "ws:carrinho", "v": 1,

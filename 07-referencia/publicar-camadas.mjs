@@ -146,36 +146,59 @@ log('✔ robots.txt          não indexar');
 console.log('\nverificando…');
 let alertas = 0;
 
-/* 1 · As duas metades do contrato de origem precisam concordar. */
-{
-  const html = fs.readFileSync(path.join(SAIDA, 'WS_MINT.html'), 'utf8');
-  const bloco = (html.match(/const ORIGENS_APP=\[([\s\S]*?)\];/) || [, ''])[1];
-  const naCamada = [...bloco.matchAll(/'(https:\/\/[^']+)'/g)].map((m) => m[1]);
+/* 1 · As duas metades do contrato de origem precisam concordar.
 
-  const faltando = ORIGENS_APP.filter((o) => !naCamada.includes(o));
-  if (faltando.length) {
-    console.log('  ✘ o frame-ancestors libera origens que a camada RECUSA: ' + faltando.join(' · '));
-    console.log('    O iframe carregaria e ignoraria todo comando — a camada ficaria');
-    console.log('    "carregando" para sempre. Alinhe ORIGENS_APP no WS_MINT.html.');
-    alertas++;
-  } else {
-    log('✔ origens do cabeçalho conferem com as da camada');
+   Antes isto conferia SÓ o `WS_MINT.html`, porque era a única camada com a
+   lista. Quando o Studio ganhou a dele, uma divergência ali passaria sem uma
+   linha de aviso — que é exatamente o modo de falha que esta verificação
+   existe para pegar. Agora vale para toda camada que declare `ORIGENS_APP`;
+   quem ainda não declarou aparece listado, não é omitido. */
+{
+  const semLista = [];
+  let conferidas = 0;
+
+  for (const nome of Object.keys(CAMADAS)) {
+    const html = fs.readFileSync(path.join(SAIDA, nome), 'utf8');
+    const bloco = html.match(/const ORIGENS_APP\s*=\s*\[([\s\S]*?)\];/);
+    if (!bloco) { semLista.push(nome); continue; }
+    const naCamada = [...bloco[1].matchAll(/'(https:\/\/[^']+)'/g)].map((m) => m[1]);
+    conferidas++;
+
+    const faltando = ORIGENS_APP.filter((o) => !naCamada.includes(o));
+    if (faltando.length) {
+      console.log('  ✘ ' + nome + ': o frame-ancestors libera origens que a camada RECUSA: ' + faltando.join(' · '));
+      console.log('    O iframe carregaria e ignoraria todo comando — a camada ficaria');
+      console.log('    "carregando" para sempre. Alinhe ORIGENS_APP em ' + nome + '.');
+      alertas++;
+    }
+
+    /* O outro sentido. A camada aceitar uma origem que o `frame-ancestors` não
+       libera não trava nada — o navegador barra o iframe ANTES, e a lista da
+       camada nunca chega a ser consultada. Por isso não reprova: staging ou uma
+       origem antiga podem estar ali de propósito.
+
+       Mas é o sentido que passa despercebido. Acrescentar a origem só na camada
+       produz um deploy que parece completo, publica sem uma linha de aviso, e
+       falha com um erro de CSP que aponta para o arquivo errado — foi
+       exatamente o que aconteceu em 2026-08-09 com `white-stone.pages.dev`. */
+    const inalcancaveis = naCamada.filter((o) => !ORIGENS_APP.includes(o));
+    if (inalcancaveis.length) {
+      console.log('  ⚠ ' + nome + ' aceita origens que o frame-ancestors NÃO libera: ' + inalcancaveis.join(' · '));
+      console.log('    Ali o iframe nem carrega — o navegador barra antes de qualquer mensagem.');
+      console.log('    Se alguma dessas precisa funcionar, acrescente-a a ORIGENS_APP neste script.');
+    }
   }
 
-  /* O outro sentido. A camada aceitar uma origem que o `frame-ancestors` não
-     libera não trava nada — o navegador barra o iframe ANTES, e a lista da
-     camada nunca chega a ser consultada. Por isso não reprova: staging ou uma
-     origem antiga podem estar ali de propósito.
+  if (conferidas && !alertas) log('✔ origens do cabeçalho conferem com as de ' + conferidas + ' camada(s)');
 
-     Mas é o sentido que passa despercebido. Acrescentar a origem só na camada
-     produz um deploy que parece completo, publica sem uma linha de aviso, e
-     falha com um erro de CSP que aponta para o arquivo errado — foi
-     exatamente o que aconteceu em 2026-08-09 com `white-stone.pages.dev`. */
-  const inalcancaveis = naCamada.filter((o) => !ORIGENS_APP.includes(o));
-  if (inalcancaveis.length) {
-    console.log('  ⚠ a camada aceita origens que o frame-ancestors NÃO libera: ' + inalcancaveis.join(' · '));
-    console.log('    Ali o iframe nem carrega — o navegador barra antes de qualquer mensagem.');
-    console.log('    Se alguma dessas precisa funcionar, acrescente-a a ORIGENS_APP neste script.');
+  /* Camada sem lista aceita comando de QUALQUER origem que consiga embuti-la.
+     Hoje o `frame-ancestors` já limita quem embute, então não é uma brecha
+     aberta — é uma fechadura a menos numa porta que tem outra. Fica como
+     alerta enquanto as camadas restantes não são portadas. */
+  if (semLista.length) {
+    console.log('  ⚠ sem validação de origem própria: ' + semLista.join(' · '));
+    console.log('    Elas dependem só do frame-ancestors. Portar o bloco de contrato');
+    console.log('    do WS_MINT.html/WS_STUDIO.html fecha a segunda metade.');
   }
 }
 
